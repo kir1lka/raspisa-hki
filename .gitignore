@@ -1,0 +1,20 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
+# IntelliJ IDEA / IDE files
+.idea/
+*.iml
+
+# H2 database files (локальные данные — не храним в репозитории)
+/data/
+*.mv.db
+*.trace.db
+
+# Локальные переменные окружения (могут содержать секреты). .env.example — храним.
+.env
+
+# Логи
+*.log

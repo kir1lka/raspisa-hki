@@ -1,0 +1,35 @@
+# Порт приложения. ${SERVER_PORT:8080} = взять из переменной SERVER_PORT (.env),
+# а если её нет — использовать 8080 (значение после двоеточия — по умолчанию).
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  # --- Подключение к базе данных H2 (хранится в ФАЙЛЕ на диске) ---
+  datasource:
+    # Значения берутся из .env (через spring-dotenv), иначе — дефолты после ":".
+    # Драйвер не указываем — Spring Boot определит его по URL (h2 → H2, postgresql → Postgres).
+    url: ${DB_URL:jdbc:h2:file:./data/raspisa;AUTO_SERVER=TRUE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+
+  # --- Настройки JPA / Hibernate ---
+  jpa:
+    hibernate:
+      ddl-auto: update          # обновляет схему по @Entity, НЕ стирая данные (важно для файловой БД)
+    show-sql: true              # печатать в консоль SQL-запросы (полезно для обучения)
+    properties:
+      hibernate:
+        format_sql: true        # красиво форматировать этот SQL
+
+# Базу смотрим внешним инструментом (DBeaver). AUTO_SERVER=TRUE в URL выше
+# разрешает подключаться к файловой БД параллельно с работающим приложением.
+
+# --- Web Push (уведомления о мероприятиях) ---
+# VAPID-ключи (пара) генерируются один раз и лежат в .env. Если их нет —
+# рассылка просто отключена (приложение работает как обычно).
+push:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY:}
+    private-key: ${VAPID_PRIVATE_KEY:}
+    # «Контакт» отправителя (требование стандарта VAPID): mailto: или https-адрес.
+    subject: ${VAPID_SUBJECT:mailto:admin@raspisa.local}

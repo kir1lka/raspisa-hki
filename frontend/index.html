@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#e9e9e9" />
+    <title>Расписание ШКИ</title>
+    <script>
+      if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark')
+      var __s = localStorage.getItem('ui-scale')
+      if (__s) document.documentElement.style.setProperty('--ui-scale', __s)
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

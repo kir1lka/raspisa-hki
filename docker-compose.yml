@@ -1,0 +1,64 @@
+services:
+  # --- База данных PostgreSQL ---
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: raspisa
+      POSTGRES_USER: raspisa
+      POSTGRES_PASSWORD: raspisa
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # данные переживают перезапуск контейнера
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raspisa"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped               # БД сама поднимается после падения / ребута
+
+  # --- Наше приложение (Spring Boot + React внутри) ---
+  app:
+    build: .                              # собрать из Dockerfile в этой папке
+    depends_on:
+      db:
+        condition: service_healthy        # стартуем только когда БД готова
+    environment:
+      # Подключение к Postgres по имени сервиса "db" внутри docker-сети
+      DB_URL: jdbc:postgresql://db:5432/raspisa
+      DB_USERNAME: raspisa
+      DB_PASSWORD: raspisa
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"                       # сайт будет на http://localhost:8080
+    # Если Java-процесс упадёт (ошибка, OutOfMemory) или ПК перезагрузится —
+    # Docker сам поднимет приложение заново. Не поднимет только если ты сам
+    # остановил контейнер (docker compose stop / down).
+    restart: unless-stopped
+    # Метка, по которой autoheal понимает, что за этим контейнером надо следить.
+    labels:
+      - autoheal=true
+    # Healthcheck: проверяем, что порт 8080 отвечает (если Spring упал — порт закрыт).
+    # Через bash /dev/tcp — без curl/wget, которых может не быть в образе.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8080' 2>/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s                   # даём ~минуту на старт Spring Boot
+
+  # --- Авто-доктор: перезапускает контейнеры, ставшие unhealthy ---
+  # restart-policy сам реагирует только на ВЫХОД процесса. Если приложение
+  # зависло (порт не отвечает, healthcheck = unhealthy), но процесс жив —
+  # autoheal заметит это и перезапустит контейнер.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal   # следить только за контейнерами с меткой autoheal=true
+      AUTOHEAL_INTERVAL: 10                 # проверять статус каждые 10 сек
+      AUTOHEAL_START_PERIOD: 60             # подождать минуту перед началом слежки
+    volumes:
+      # Доступ к Docker — чтобы autoheal мог перезапускать контейнеры.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  pgdata:
