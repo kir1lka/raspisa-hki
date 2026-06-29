@@ -5,6 +5,7 @@ import { getUser, clearUser } from '../../auth'
 import { useBodyScrollLock } from '../../useBodyScrollLock'
 import { enablePush, getPushState } from '../../push'
 import { getDefaultSelection, setDefaultSelection } from '../../defaultSelection'
+import { shortName } from '../../utils'
 
 export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoom, onZoomChange, groups = [], teachers = [] }) {
   const navigate = useNavigate()
@@ -160,7 +161,9 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
                   {defaultSel.type === 'teacher'
                     ? <User className="size-5 shrink-0 text-brand" />
                     : <Users className="size-5 shrink-0 text-brand" />}
-                  <span className="truncate">{defaultSel.label}</span>
+                  <span className="truncate">
+                    {defaultSel.type === 'teacher' ? shortName(defaultSel.label) : defaultSel.label}
+                  </span>
                 </span>
                 <button
                   type="button"
