@@ -7,6 +7,15 @@ export const DAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'
 
 export const hhmm = (t) => t.slice(0, 5)
 
+export function shortName(full) {
+  if (!full) return ''
+  const parts = full.trim().split(/\s+/)
+  if (parts.length < 2) return full
+  const [last, ...rest] = parts
+  const initials = rest.map((p) => p.charAt(0).toUpperCase() + '.').join(' ')
+  return `${last} ${initials}`
+}
+
 export function endTime(t) {
   const [h, m] = t.split(':').map(Number)
   const total = h * 60 + m + 40

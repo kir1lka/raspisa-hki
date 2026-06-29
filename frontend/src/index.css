@@ -130,7 +130,7 @@
   }
 
   body {
-    min-height: 100vh;
+    min-height: 100dvh;
     background-image:
       radial-gradient(circle at center, rgba(233, 233, 233, 0.93), rgba(233, 233, 233, 0.985)),
       url('./assets/bg.jpg');

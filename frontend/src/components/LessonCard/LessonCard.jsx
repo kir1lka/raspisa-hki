@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronRight, Sparkles } from 'lucide-react'
-import { hhmm, endTime, isCurrentLesson } from '../../utils'
+import { hhmm, endTime, isCurrentLesson, shortName } from '../../utils'
 import studioVr from '../../assets/studio-vr.png'
 import studioDesign from '../../assets/studio-design.png'
 import studioSound from '../../assets/studio-sound.png'
@@ -105,7 +105,7 @@ export default function LessonCard({ lesson, index = 0, byTeacher = false, highl
             ? `Место проведения: ${lesson.studioName}`
             : byTeacher
               ? lesson.studioName
-              : `пр. ${lesson.teacherName}`}
+              : `пр. ${shortName(lesson.teacherName)}`}
         </p>
       </div>
     </article>
