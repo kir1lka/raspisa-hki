@@ -24,10 +24,11 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   const [dragY, setDragY] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 640px)').matches)
-  const [fullPhoto, setFullPhoto] = useState(null)
+  const [fullIndex, setFullIndex] = useState(null)
   const startY = useRef(null)
   const scrollRef = useRef(null)
   const slideStartX = useRef(null)
+  const fullStartX = useRef(null)
 
   const studio = lesson && !lesson.special ? (studios || []).find((s) => s.code === lesson.studioCode) : null
 
@@ -45,7 +46,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
     if (open && lesson) {
       setSlide(0)
       setDragY(0)
-      setFullPhoto(null)
+      setFullIndex(null)
       setLoading(true)
       const raf = requestAnimationFrame(() => setShown(true))
       const t = setTimeout(() => setLoading(false), 700)
@@ -71,6 +72,18 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
       document.body.style.overflow = prev
     }
   }, [open])
+
+  // Навигация по фото в полноэкранном просмотре с клавиатуры.
+  useEffect(() => {
+    if (fullIndex === null) return
+    function onKey(e) {
+      if (e.key === 'Escape') setFullIndex(null)
+      else if (e.key === 'ArrowLeft') setFullIndex((i) => (i - 1 + slideCount) % slideCount)
+      else if (e.key === 'ArrowRight') setFullIndex((i) => (i + 1) % slideCount)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullIndex, slideCount])
 
   if (!open || !lesson) return null
 
@@ -155,6 +168,19 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
     slideStartX.current = null
   }
 
+  const fullPrev = () => setFullIndex((i) => (i - 1 + slideCount) % slideCount)
+  const fullNext = () => setFullIndex((i) => (i + 1) % slideCount)
+  function fullTouchStart(e) {
+    fullStartX.current = e.touches[0].clientX
+  }
+  function fullTouchEnd(e) {
+    if (fullStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - fullStartX.current
+    if (dx < -40) fullNext()
+    else if (dx > 40) fullPrev()
+    fullStartX.current = null
+  }
+
   const sheetStyle = isDesktop
     ? {
         zoom: 'calc(var(--ui-base) * var(--ui-zoom))',
@@ -193,7 +219,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
                 <img
                   src={src}
                   alt="Фото студии"
-                  onClick={() => setFullPhoto(src)}
+                  onClick={() => setFullIndex(i)}
                   className="h-full w-full cursor-zoom-in object-cover"
                 />
               </div>
@@ -424,12 +450,44 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
       </div>
     </div>
 
-    {fullPhoto && (
-      <div className="fixed inset-0 z-[70] grid place-items-center bg-black/90 p-4" onClick={() => setFullPhoto(null)}>
-        <img src={fullPhoto} alt="Фото" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+    {fullIndex !== null && photos[fullIndex] && (
+      <div
+        className="fixed inset-0 z-[70] grid place-items-center bg-black/90 p-4"
+        onClick={() => setFullIndex(null)}
+        onTouchStart={fullTouchStart}
+        onTouchEnd={fullTouchEnd}
+      >
+        <img src={photos[fullIndex]} alt="Фото" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+
+        {slideCount > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); fullPrev() }}
+              aria-label="Предыдущее фото"
+              className="absolute top-1/2 left-4 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+            >
+              <ChevronLeft className="size-7" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); fullNext() }}
+              aria-label="Следующее фото"
+              className="absolute top-1/2 right-4 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+            >
+              <ChevronRight className="size-7" />
+            </button>
+            <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {photos.map((_, i) => (
+                <span key={i} className={'size-2 rounded-full ' + (i === fullIndex ? 'bg-white' : 'bg-white/40')} />
+              ))}
+            </div>
+          </>
+        )}
+
         <button
           type="button"
-          onClick={() => setFullPhoto(null)}
+          onClick={() => setFullIndex(null)}
           aria-label="Закрыть"
           className="absolute top-4 right-4 grid size-12 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
         >
