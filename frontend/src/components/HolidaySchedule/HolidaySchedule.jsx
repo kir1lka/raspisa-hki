@@ -14,6 +14,26 @@ import { useBodyScrollLock } from '../../useBodyScrollLock'
 const TYPE_LABEL = { EVENT: 'Мероприятие', HOLIDAY: 'Праздник', VACATION: 'Каникулы' }
 const STUDIO_CODES = ['ФВ', 'ВР', 'ЗВ', 'АН', 'ДЗ', 'ЭЛ', 'ЛК', 'СВ']
 
+const STUDIO_NAMES = {
+  'ФВ': 'Фото-видео производство',
+  'ВР': 'Интерактивные цифровые технологии VR и AR',
+  'ЗВ': 'Звукорежиссура',
+  'АН': 'Анимация и 3D графика',
+  'ДЗ': 'Дизайн',
+  'ЭЛ': 'Электронная музыка',
+  'ЛК': 'Лекторий ШКИ',
+  'СВ': 'Студия «Северсталь»',
+}
+
+// Подпись в выпадающем списке мест: «Студия фото-видео производство».
+// Лекторий и уже готовые «Студия …» (Северсталь) остаются как есть.
+function studioOptionLabel(code) {
+  const name = STUDIO_NAMES[code]
+  if (!name) return code
+  if (name.startsWith('Студия') || name.startsWith('Лектор')) return name
+  return `Студия ${name.charAt(0).toLowerCase()}${name.slice(1)}`
+}
+
 const DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
 function dowFromDate(s) {
   const [y, mo, d] = s.split('-').map(Number)
@@ -362,7 +382,7 @@ function EventModal({ form, setForm, onClose, onSaved }) {
         <label className="mt-4 block text-sm font-medium text-ink">
           Место проведения
           <select className={field} value={form.studioCode} onChange={(e) => set({ studioCode: e.target.value })}>
-            {STUDIO_CODES.map((c) => (<option key={c} value={c}>{c}</option>))}
+            {STUDIO_CODES.map((c) => (<option key={c} value={c}>{studioOptionLabel(c)}</option>))}
           </select>
         </label>
 

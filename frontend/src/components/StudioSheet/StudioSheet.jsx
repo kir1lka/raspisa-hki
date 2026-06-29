@@ -247,7 +247,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   const teacherPhoto = (
       <div
         onClick={angryBurst}
-        className={`grid cursor-pointer place-items-center text-muted transition active:scale-[0.99] ${TEACHER_BOX}`}
+        className={`grid cursor-pointer place-items-center text-muted transition-transform active:scale-[0.99] ${TEACHER_BOX}`}
       >
         {studio?.teacherPhoto ? (
           <img src={studio.teacherPhoto} alt={lesson.teacherName} className="h-full w-full object-cover" />
