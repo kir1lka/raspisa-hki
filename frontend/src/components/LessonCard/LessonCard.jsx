@@ -102,7 +102,7 @@ export default function LessonCard({ lesson, index = 0, byTeacher = false, highl
         </h3>
         <p className="text-halo text-sm text-ink md:text-xl">
           {lesson.special
-            ? `Место проведения: ${lesson.studioName}`
+            ? `Место: ${lesson.studioName}`
             : byTeacher
               ? lesson.studioName
               : `пр. ${shortName(lesson.teacherName)}`}
