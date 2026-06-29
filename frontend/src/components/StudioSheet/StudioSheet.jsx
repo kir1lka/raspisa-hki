@@ -28,7 +28,6 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   const startY = useRef(null)
   const scrollRef = useRef(null)
   const slideStartX = useRef(null)
-  const fullStartX = useRef(null)
 
   const studio = lesson && !lesson.special ? (studios || []).find((s) => s.code === lesson.studioCode) : null
 
@@ -170,16 +169,6 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
 
   const fullPrev = () => setFullIndex((i) => (i - 1 + slideCount) % slideCount)
   const fullNext = () => setFullIndex((i) => (i + 1) % slideCount)
-  function fullTouchStart(e) {
-    fullStartX.current = e.touches[0].clientX
-  }
-  function fullTouchEnd(e) {
-    if (fullStartX.current === null) return
-    const dx = e.changedTouches[0].clientX - fullStartX.current
-    if (dx < -40) fullNext()
-    else if (dx > 40) fullPrev()
-    fullStartX.current = null
-  }
 
   const sheetStyle = isDesktop
     ? {
@@ -454,8 +443,6 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
       <div
         className="fixed inset-0 z-[70] grid place-items-center bg-black/90 p-4"
         onClick={() => setFullIndex(null)}
-        onTouchStart={fullTouchStart}
-        onTouchEnd={fullTouchEnd}
       >
         <img src={photos[fullIndex]} alt="Фото" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
 
