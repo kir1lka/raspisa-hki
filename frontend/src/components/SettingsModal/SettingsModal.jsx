@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Bell, BellOff, BellRing, Info, Trash2, Moon, Scaling, CircleUserRound, LogOut, LoaderCircle } from 'lucide-react'
+import { X, Bell, BellOff, BellRing, Info, Trash2, Moon, Scaling, CircleUserRound, LogOut, LoaderCircle, Star, Users, User } from 'lucide-react'
 import { getUser, clearUser } from '../../auth'
 import { useBodyScrollLock } from '../../useBodyScrollLock'
 import { enablePush, getPushState } from '../../push'
+import { getDefaultSelection, setDefaultSelection } from '../../defaultSelection'
 
-export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoom, onZoomChange }) {
+export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoom, onZoomChange, groups = [], teachers = [] }) {
   const navigate = useNavigate()
   useBodyScrollLock(open)
 
@@ -13,11 +14,49 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
   const [pushBusy, setPushBusy] = useState(false)
   const [pushError, setPushError] = useState(null)
 
+  const [defaultSel, setDefaultSel] = useState(() => getDefaultSelection())
+  const [pickQuery, setPickQuery] = useState('')
+  const [pickOpen, setPickOpen] = useState(false)
+
   useEffect(() => {
     if (!open) return
     setPushError(null)
     getPushState().then(setPushState).catch(() => setPushState('unsupported'))
+    setDefaultSel(getDefaultSelection())
+    setPickQuery('')
+    setPickOpen(false)
   }, [open])
+
+  const pq = pickQuery.trim()
+  const pickHasLetters = /[A-Za-zА-Яа-яЁё]/.test(pq)
+  let pickSuggestions = []
+  if (pq) {
+    if (pickHasLetters) {
+      const lq = pq.toLowerCase()
+      pickSuggestions = teachers
+        .filter((t) => t.fullName.toLowerCase().includes(lq))
+        .slice(0, 8)
+        .map((t) => ({ key: `t${t.id}`, icon: User, label: t.fullName, sel: { type: 'teacher', value: t.id, label: t.fullName } }))
+    } else {
+      const digits = pq.replace(/\D/g, '')
+      pickSuggestions = groups
+        .filter((n) => digits === '' || String(n).startsWith(digits))
+        .slice(0, 8)
+        .map((n) => ({ key: `g${n}`, icon: Users, label: `${n} группа`, sel: { type: 'group', value: n, label: `${n} группа` } }))
+    }
+  }
+
+  function chooseDefault(sel) {
+    setDefaultSelection(sel)
+    setDefaultSel(sel)
+    setPickQuery('')
+    setPickOpen(false)
+  }
+
+  function clearDefault() {
+    setDefaultSelection(null)
+    setDefaultSel(null)
+  }
 
   async function handleEnablePush() {
     setPushBusy(true)
@@ -108,6 +147,62 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
             className="w-full cursor-pointer accent-brand"
           />
         </div>
+
+        {(groups.length > 0 || teachers.length > 0) && (
+          <div className="mt-3 rounded-card border-2 border-line bg-canvas px-4 py-4">
+            <div className="mb-3 flex items-center gap-3 text-base text-ink">
+              <Star className="size-5 text-muted" /> Открывать при входе
+            </div>
+
+            {defaultSel ? (
+              <div className="flex items-center justify-between gap-3 rounded-card border-2 border-brand/50 bg-surface px-4 py-3">
+                <span className="flex min-w-0 items-center gap-2 text-base text-ink">
+                  {defaultSel.type === 'teacher'
+                    ? <User className="size-5 shrink-0 text-brand" />
+                    : <Users className="size-5 shrink-0 text-brand" />}
+                  <span className="truncate">{defaultSel.label}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={clearDefault}
+                  aria-label="Сбросить выбор по умолчанию"
+                  className="grid size-8 shrink-0 place-items-center rounded-md bg-canvas text-red-400 transition-colors hover:text-red-500"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  value={pickQuery}
+                  onChange={(e) => { setPickQuery(e.target.value); setPickOpen(true) }}
+                  onFocus={() => setPickOpen(true)}
+                  onBlur={() => setTimeout(() => setPickOpen(false), 120)}
+                  placeholder="№ группы или имя преподавателя"
+                  className="w-full rounded-card border-2 border-line bg-surface px-4 py-3 text-base text-ink outline-none placeholder:text-muted/70 focus:border-brand"
+                />
+                {pickOpen && pickSuggestions.length > 0 && (
+                  <ul className="absolute right-0 left-0 z-10 mt-2 max-h-60 overflow-auto rounded-card border-2 border-line bg-surface shadow-lg">
+                    {pickSuggestions.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <li key={item.key} className="border-line/60 [&:not(:last-child)]:border-b">
+                          <button
+                            type="button"
+                            onMouseDown={() => chooseDefault(item.sel)}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left text-base text-ink transition-colors hover:bg-canvas"
+                          >
+                            <Icon className="size-5 shrink-0 text-muted" /> {item.label}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-col gap-3">
 

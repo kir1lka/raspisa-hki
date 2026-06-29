@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage/AuthPage'
 import DashboardPage from './pages/DashboardPage/DashboardPage'
 import WelcomeModal from './components/WelcomeModal/WelcomeModal'
 import { getUser } from './auth'
+import { getDefaultSelection, defaultSelectionPath } from './defaultSelection'
 
 const WELCOME_KEY = 'welcome-seen-v1'
 
@@ -14,6 +15,13 @@ function RequireAuth({ children }) {
 
 function GuestOnly({ children }) {
   return getUser() ? <Navigate to="/dashboard" replace /> : children
+}
+
+// Стартовый экран: если задан выбор по умолчанию — сразу открываем его расписание,
+// иначе обычный поиск.
+function Home() {
+  const path = defaultSelectionPath(getDefaultSelection())
+  return path ? <Navigate to={path} replace /> : <SchedulePage />
 }
 
 export default function App() {
@@ -29,7 +37,7 @@ export default function App() {
   return (
     <>
     <Routes>
-      <Route path="/" element={<GuestOnly><SchedulePage /></GuestOnly>} />
+      <Route path="/" element={<GuestOnly><Home /></GuestOnly>} />
       <Route path="/group/:number" element={<SchedulePage />} />
       <Route path="/teacher/:teacherId" element={<SchedulePage />} />
       <Route path="/login" element={<GuestOnly><AuthPage /></GuestOnly>} />

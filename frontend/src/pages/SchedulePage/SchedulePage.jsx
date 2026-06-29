@@ -202,6 +202,8 @@ export default function SchedulePage({ base = '' }) {
         onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
         zoom={zoom}
         onZoomChange={setZoom}
+        groups={groups}
+        teachers={teachers}
       />
 
       {calendarOpen && (

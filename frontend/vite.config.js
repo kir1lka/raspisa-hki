@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // регистрируем SW вручную в main.jsx (с проверкой обновления при возврате)
       includeAssets: ['favicon.svg'],
       pwaAssets: {
         config: true,
@@ -28,6 +29,9 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         globIgnores: ['**/exceljs*.js'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
 
         importScripts: ['/push-sw.js'],
         runtimeCaching: [

@@ -13,10 +13,12 @@ import ru.raspisa.repository.LessonRepository;
 import ru.raspisa.repository.StudioRepository;
 
 import java.time.DayOfWeek;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -94,17 +96,35 @@ public class LessonService {
         if (saved.isSpecial()) {
             String title = (saved.getTitle() != null && !saved.getTitle().isBlank())
                     ? saved.getTitle() : "Новое мероприятие";
-            pushService.sendToAll("📣 " + title, notificationBody(saved.getDescription()), "/");
+            pushService.sendToAll("📣 " + title, notificationBody(saved), "/");
         }
         return toDto(saved);
     }
 
-    private static String notificationBody(String description) {
-        if (description == null || description.isBlank()) {
-            return "Новое мероприятие в Школе креативных индустрий";
+    private static final DateTimeFormatter PUSH_DATE = DateTimeFormatter.ofPattern("d MMMM", new Locale("ru"));
+    private static final DateTimeFormatter PUSH_TIME = DateTimeFormatter.ofPattern("HH:mm");
+
+
+    private static String notificationBody(Lesson lesson) {
+        StringBuilder sb = new StringBuilder();
+        if (lesson.getDate() != null) {
+            sb.append(lesson.getDate().format(PUSH_DATE));
+            if (lesson.getTime() != null) {
+                sb.append(" в ").append(lesson.getTime().format(PUSH_TIME));
+            }
         }
-        String text = description.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
-        return text.length() > 120 ? text.substring(0, 117) + "…" : text;
+
+        String description = lesson.getDescription();
+        if (description != null && !description.isBlank()) {
+            String text = description.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
+            if (sb.length() > 0) sb.append(" — ");
+            sb.append(text);
+        } else if (sb.length() == 0) {
+            sb.append("Новое мероприятие");
+        }
+
+        String result = sb.toString();
+        return result.length() > 120 ? result.substring(0, 117) + "…" : result;
     }
 
     @Transactional
