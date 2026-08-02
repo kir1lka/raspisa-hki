@@ -1,0 +1,1575 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расписание ШКИ — концепт дизайна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Палитра — та же, что в рабочем приложении (src/index.css).
+   ============================================================ */
+:root {
+  --brand:        #ff8400;
+  --brand-light:  #ff9500;
+  --brand-ring:   #ffbc2a;
+
+  --ink:      #333333;
+  --muted:    #666666;
+  --surface:  #ffffff;
+  --canvas:   #e9e9e9;
+  --line:     #c9c9c9;
+  --day-off:  #b4b4b4;
+
+  --lesson:   #0d8000;
+  --project:  #800002;
+
+  --r-lg: 24px;
+  --r-md: 20px;
+  --r-sm: 14px;
+  --shadow: 0 18px 40px -24px rgba(0,0,0,.45);
+}
+
+[data-theme="dark"] {
+  /* В тёмной теме акцент синий — ровно как в приложении (.dark в src/index.css). */
+  --brand:        #3b82f6;
+  --brand-light:  #60a5fa;
+  --brand-ring:   #3b82f6;
+
+  --ink:      #e8e8e8;
+  --muted:    #9aa0a8;
+  --surface:  #23262e;
+  --canvas:   #15171c;
+  --line:     #3a3d44;
+  --day-off:  #2d3038;
+  --shadow: 0 18px 40px -20px rgba(0,0,0,.8);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* ===================== Иконки =====================
+   Набор Lucide — тот же, что в рабочем приложении (lucide-react).
+   Раньше здесь стояли юникод-символы (⌕ ◐ ⚙ ‹ ›): они мелкие,
+   по-разному рисуются в разных системах и не тянутся за размером.
+   Размер и толщину линии меняем тут, в одном месте. */
+svg.ic {
+  width: 24px; height: 24px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+svg.ic-lg { width: 28px; height: 28px; }
+svg.ic-sm { width: 18px; height: 18px; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 520px; height: 520px;
+  background: var(--brand);
+  top: -220px; left: -140px;
+  opacity: .10;
+}
+body::after {
+  width: 460px; height: 460px;
+  background: var(--brand-ring);
+  bottom: -240px; right: -120px;
+  opacity: .08;
+}
+[data-theme="dark"] body::before { opacity: .28; }
+[data-theme="dark"] body::after  { opacity: .18; }
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  /* Уже, чем было (1040 → 880 → 760): на большом мониторе строки занятий
+     растягивались через весь экран и читались тяжело. */
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 18px 36px;
+}
+
+/* ===================== Подвал =====================
+   Состав тот же, что на рабочем сайте: название школы, ссылки на соцсети
+   и подпись автора. Нижний отступ большой — под плавающую панель навигации. */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 2px solid var(--line);
+  padding-bottom: 110px;
+}
+.site-footer-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 18px 0;
+  text-align: center;
+  color: var(--muted);
+}
+.site-footer .school { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.site-footer .links {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.site-footer .links a {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  transition: .18s;
+}
+.site-footer .links a:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  transform: translateY(-2px);
+}
+.site-footer .author {
+  font-size: 13px;
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+  text-decoration: none;
+  transition: .18s;
+}
+.site-footer .author:hover { color: var(--brand); }
+
+/* ===================== Шапка ===================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: transparent;
+  padding: 12px 18px 16px;
+}
+
+/* Подложка шапки: размытие + затемнение, растворяющиеся к низу.
+   Прямоугольная заливка давала чёткую границу и читалась тёмной плашкой,
+   поэтому и размытие, и затемнение гасятся маской-градиентом — низ уходит
+   в ноль, и переход к странице получается без единой видимой линии.
+   Блок заходит на 18px ниже шапки, чтобы растворение попадало в зазор
+   перед плашкой дня, а не обрывалось на её границе. */
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -18px 0;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--canvas) 80%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+}
+/* Сама шапка — отдельная карточка со своим фоном и рамкой.
+   Пока она была того же цвета, что страница, её край не читался: увеличение
+   высоты выглядело как «шапка стала длиннее», а не как появившийся отступ.
+   Теперь у карточки есть видимая граница, и 16px подложки под ней — настоящий воздух. */
+.topbar-inner {
+  /* 724 = 760 − 2×18: ширина совпадает с карточками занятий ниже. */
+  max-width: 724px;
+  margin: 0 auto;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 8px 4px 4px;
+  margin-left: -4px;
+  border: 0; border-radius: 12px;
+  background: transparent;
+  font: inherit; font-weight: 900; font-size: 20px; letter-spacing: -.02em;
+  color: var(--ink);
+  cursor: pointer; transition: .18s;
+}
+.logo:hover { color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); }
+/* min-width: 0 нужен, чтобы блок мог сжиматься: без него длинная подпись
+   распирала шапку и кнопки уезжали за край экрана на узких окнах. */
+.logo { min-width: 0; }
+.logo-text {
+  display: flex; flex-direction: column; align-items: flex-start;
+  min-width: 0; line-height: 1.2;
+}
+.logo-text b { font-size: 20px; font-weight: 900; letter-spacing: -.02em; }
+.logo-text i {
+  max-width: 100%;
+  font-style: normal; font-size: 13px; font-weight: 600;
+  letter-spacing: 0; opacity: .55;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Значок «ШКИ» пока скрыт. Разметка оставлена — чтобы вернуть,
+   достаточно поменять display на grid. */
+.logo-mark {
+  display: none;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff; font-size: 15px; font-weight: 900;
+  box-shadow: 0 6px 18px -6px var(--brand);
+}
+
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+.icon-btn {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: 13px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer; transition: .18s;
+}
+.icon-btn:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+
+/* ===================== Поиск ===================== */
+.search {
+  display: flex; align-items: center; gap: 12px;
+  height: 62px; padding: 0 20px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: .2s;
+}
+.search:focus-within { border-color: var(--brand); }
+.search input {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 17px; color: var(--ink);
+}
+.search input::placeholder { color: var(--muted); }
+.search .go {
+  border: 0; border-radius: 13px; padding: 10px 18px;
+  font: inherit; font-weight: 700; font-size: 14px; color: #fff;
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  cursor: pointer; white-space: nowrap;
+}
+
+/* ===================== Навигация по неделям =====================
+   Заменила и чипы групп, и полосу выбора дня: раз на странице показана
+   вся неделя целиком, выбирать отдельный день больше незачем — нужно
+   только листать недели и прыгать по датам через календарь. */
+.weekbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 8px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.weekbar .nav {
+  flex: none;
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  border-radius: 13px;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer; transition: .18s;
+}
+.weekbar .nav:hover { border-color: var(--brand); color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, transparent); }
+
+/* Кнопка-дата: по клику открывается календарь */
+.weekbar .range {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 10px;
+  border: 0; border-radius: 13px;
+  background: transparent;
+  font: inherit; color: var(--ink);
+  cursor: pointer; transition: .18s;
+}
+.weekbar .range:hover { background: color-mix(in srgb, var(--brand) 10%, transparent); }
+.weekbar .range b {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 800; letter-spacing: -.01em;
+}
+.weekbar .range b svg { color: var(--brand); }
+.weekbar .range i {
+  font-style: normal; font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ===================== День недели ===================== */
+/* Заголовок дня — не просто полоса с текстом, а календарная плашка:
+   слева крупное число в квадрате, рядом название и месяц, справа счётчик. */
+.day-head {
+  position: sticky;
+  /* Ровно высота блока шапки вместе с подложкой: воздух до плашки — это её
+     нижний отступ, добавлять здесь ничего не нужно, иначе появится щель. */
+  top: 98px;
+  z-index: 20;
+  display: flex; align-items: center; gap: 13px;
+  /* Отступ сверху заметно больше, чем зазор между карточками внутри дня (10px):
+     так группы дней читаются как отдельные блоки, а не как один сплошной список. */
+  margin: 44px 0 14px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--line);
+  /* Фон строго непрозрачный: при полупрозрачном сквозь плашку просвечивал
+     градиент и свечение соседнего дня, когда две липкие плашки наезжают друг на друга. */
+  background: var(--canvas);
+}
+
+.day-num {
+  flex: none;
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border-radius: 13px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-size: 19px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+.day-name { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.day-name b { font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+.day-name i {
+  font-style: normal;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .11em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.day-count {
+  margin-left: auto;
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-size: 12px; font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Сегодняшний день — единственный градиентный заголовок */
+.day-head.today {
+  /* Светлая рамка вместо прозрачной: на градиенте обычный цвет линии не виден,
+     а обводка нужна такая же, как у остальных дней. */
+  border-color: rgba(255, 255, 255, .38);
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff;
+  /* Цветного свечения тут быть не должно: плашка липкая, и когда её наезжает
+     следующий день, ореол вылезает из-под него цветным пятном. */
+  box-shadow: none;
+}
+.day-head.today .day-num    { background: rgba(255,255,255,.24); border-color: transparent; color: #fff; }
+.day-head.today .day-name i { color: rgba(255,255,255,.8); }
+.day-head.today .day-count  { background: rgba(255,255,255,.22); border-color: transparent; color: #fff; }
+
+/* Отдельного оформления у выходных нет: они выглядят как любой день
+   без занятий — обычная плашка и карточка «Занятий нет» под ней. */
+
+/* ===================== Карточки занятий ===================== */
+.cards { display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+  display: flex; align-items: stretch; gap: 18px;
+  padding: 16px 20px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  cursor: pointer; transition: .18s;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--brand); box-shadow: var(--shadow); }
+
+.card-time {
+  flex: none; width: 56px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.card-time .from { font-size: 15px; font-weight: 700; }
+.card-time .to   { font-size: 13px; color: var(--muted); }
+.card-time .no   {
+  margin: 4px 0;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 9px;
+  background: var(--canvas);
+  font-size: 13px; font-weight: 800;
+}
+
+.card-sep { flex: none; width: 2px; border-radius: 2px; background: var(--line); }
+
+.card-body { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+.card-body h4 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.card-body p  { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Идущее сейчас занятие разворачивается в крупную карточку —
+   но остаётся на своём месте в списке дня, а не уезжает наверх страницы. */
+.now {
+  position: relative;
+  padding: 22px 24px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 20px 44px -22px var(--brand);
+  transition: .18s;
+}
+.now:hover { transform: translateY(-2px); }
+.now::after {
+  content: '';
+  position: absolute;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  top: -110px; right: -70px;
+}
+.now > * { position: relative; z-index: 1; }
+
+.now-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.22);
+  font-size: 11px; font-weight: 800;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #fff;
+  animation: blink 1.6s ease-in-out infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
+
+.now h3 { margin: 14px 0 4px; font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.now p  { margin: 0; font-size: 15px; opacity: .9; }
+
+.now-time {
+  margin-top: 18px;
+  display: flex; align-items: center; gap: 10px;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px; font-weight: 700;
+}
+.bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(255,255,255,.28); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 999px; background: #fff; }
+
+/* Мероприятие — единственная карточка с градиентной рамкой */
+.card-event {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, var(--brand-ring), var(--brand)) border-box;
+}
+.card-event:hover { box-shadow: 0 18px 40px -22px var(--brand); }
+/* Здесь намеренно оставлен символ ✦, а не иконка из Lucide — он выглядит живее.
+   Кегль чуть крупнее текста, чтобы читался как значок, а не как буква. */
+.card-event h4::before {
+  content: '✦';
+  color: var(--brand);
+  font-size: 1.2em;
+  line-height: 1;
+  margin-right: 7px;
+}
+
+.empty {
+  padding: 22px;
+  border-radius: var(--r-md);
+  border: 2px dashed var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ===================== Календарь ===================== */
+.cal-back {
+  position: fixed; inset: 0; z-index: 60;
+  display: none;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(3px);
+}
+.cal-back.on { display: grid; }
+.cal {
+  width: 100%; max-width: 340px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,.6);
+}
+.cal-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.cal-top b { flex: 1; text-align: center; font-size: 16px; font-weight: 800; }
+.cal-top button {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  border: 2px solid var(--line);
+  background: transparent; color: var(--muted);
+  cursor: pointer; transition: .18s;
+}
+.cal-top button:hover { border-color: var(--brand); color: var(--brand); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow {
+  text-align: center; font-size: 11px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  padding-bottom: 6px;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: grid; place-items: center;
+  border: 0; border-radius: 11px;
+  background: transparent;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+  cursor: pointer; transition: .14s;
+}
+.cal-day:hover { background: color-mix(in srgb, var(--brand) 14%, transparent); }
+.cal-day.dim { color: var(--muted); opacity: .45; }
+/* Выбранная неделя подсвечена целиком — это и есть то, что откроется */
+.cal-day.in-week { background: color-mix(in srgb, var(--brand) 16%, transparent); border-radius: 0; }
+.cal-day.in-week:first-of-type { border-radius: 11px 0 0 11px; }
+.cal-day.week-start { border-radius: 11px 0 0 11px; }
+.cal-day.week-end   { border-radius: 0 11px 11px 0; }
+.cal-day.on {
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff; border-radius: 11px;
+}
+
+/* Быстрый возврат на текущую неделю — заменила кнопку «Сегодня»,
+   которая раньше стояла в листалке и занимала там место. */
+.cal-now {
+  width: 100%;
+  margin-top: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px;
+  border: 0; border-radius: 13px;
+  font: inherit; font-size: 14px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  cursor: pointer; transition: .18s;
+}
+.cal-now:hover { opacity: .9; }
+
+/* ===================== Нижняя навигация ===================== */
+/* Обёртка во всю ширину окна. Нужна из-за transform на самой панели:
+   он делал её точкой отсчёта для вложенного fixed, и полоса-подложка
+   получалась шириной с панель, а не с экран. */
+.tabbar-wrap {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 20px;
+  pointer-events: none;
+}
+.tabbar-wrap > * { pointer-events: auto; }
+
+/* Подложка нижней панели — зеркальная той, что за шапкой: внизу размытие
+   и затемнение в полную силу, кверху сходят на нет через маску-градиент,
+   поэтому видимой границы у полосы нет. */
+.tabbar-wrap::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 140px;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--canvas) 80%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 50%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 50%, transparent 100%);
+}
+
+.tabbar {
+  display: flex; gap: 4px;
+  padding: 7px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 14px 34px -10px rgba(0,0,0,.5);
+}
+.tabbar button {
+  border: 0; background: transparent;
+  padding: 10px 18px; border-radius: 999px;
+  font: inherit; font-size: 13px; font-weight: 700;
+  color: var(--muted); cursor: pointer; transition: .18s;
+}
+.tabbar button.on {
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff;
+}
+
+/* ===================== Страницы нижней навигации ===================== */
+.page { display: none; }
+.page.on { display: block; }
+
+
+/* --- Студии --- */
+.studio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.studio-card {
+  overflow: hidden;
+  border: 2px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer; transition: .18s;
+}
+.studio-card:hover { transform: translateY(-2px); border-color: var(--brand); box-shadow: var(--shadow); }
+.studio-card .shot {
+  display: grid; place-items: center;
+  aspect-ratio: 16 / 9;
+  border-bottom: 2px solid var(--line);
+  background: var(--canvas);
+  color: var(--muted);
+}
+.studio-card .body { padding: 14px 16px 16px; }
+.studio-card h4 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.studio-card p  { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+
+/* --- События --- */
+.event-list { display: flex; flex-direction: column; gap: 12px; }
+.event-card {
+  display: flex; align-items: stretch; gap: 16px;
+  padding: 16px;
+  border: 2px solid transparent; border-radius: var(--r-md);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, var(--brand-ring), var(--brand)) border-box;
+  cursor: pointer; transition: .18s;
+}
+.event-card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -22px var(--brand); }
+.event-date {
+  flex: none;
+  width: 62px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 8px 0;
+  border: 2px solid var(--line); border-radius: 13px;
+  background: var(--canvas);
+  font-variant-numeric: tabular-nums;
+}
+.event-date b { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+.event-date i {
+  font-style: normal; font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+}
+.event-body { display: flex; flex-direction: column; justify-content: center; gap: 5px; min-width: 0; }
+.event-body h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; }
+.event-body h4::before { content: '✦'; color: var(--brand); font-size: 1.15em; line-height: 1; }
+.event-body p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+/* На узком экране длинные названия ломались на две строки и карточка
+   выглядела рыхлой: уменьшаем кегли, отступы и квадрат с датой. */
+@media (max-width: 560px) {
+  .event-card { gap: 12px; padding: 13px; }
+  .event-date { width: 52px; }
+  .event-date b { font-size: 18px; }
+  .event-date i { font-size: 10px; }
+  .event-body h4 { font-size: 15px; line-height: 1.25; gap: 6px; }
+  .event-body p  { font-size: 13px; }
+}
+
+/* ===================== Кнопка «наверх» =====================
+   Лежит в контейнере той же ширины, что и расписание, и прижата к его правому
+   краю: на широком экране кнопка у края окна оказывалась далеко от содержимого. */
+.to-top-wrap {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: 94px;            /* над плавающей панелью навигации */
+  /* Выше подложки нижней панели (z-index 50), иначе её размытие
+     затрагивало кнопку и та выглядела смазанной. */
+  z-index: 55;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.to-top {
+  pointer-events: none;
+  width: 50px; height: 50px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -12px var(--brand);
+  /* Скрыта, пока страница не прокручена: не мигает и не ловит клики. */
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: .22s;
+}
+.to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+.to-top:hover { filter: brightness(1.06); }
+
+/* ===================== Всплывающие окна ===================== */
+.sheet-back {
+  position: fixed; inset: 0; z-index: 60;
+  display: none;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(4px);
+}
+.sheet-back.on { display: grid; }
+
+.sheet {
+  width: 100%; max-width: 420px;
+  max-height: 86dvh; overflow-y: auto;
+  padding: 20px;
+  border-radius: var(--r-lg);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,.6);
+}
+.sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sheet-head h3 { flex: 1; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+.sheet-close {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: 2px solid var(--line); border-radius: 12px;
+  background: transparent; color: var(--muted);
+  cursor: pointer; transition: .18s;
+}
+.sheet-close:hover { border-color: var(--brand); color: var(--brand); }
+
+/* Строка настройки — плашка на фоне страницы внутри окна */
+.row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  border: 2px solid var(--line); border-radius: var(--r-sm);
+  background: var(--canvas);
+}
+.row + .row { margin-top: 10px; }
+.row .label { flex: 1; font-size: 15px; font-weight: 600; }
+.row svg { color: var(--muted); }
+.row .val { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row.col { display: block; }
+.row.col .top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+
+.row input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--brand); }
+.row input[type="text"] {
+  width: 100%;
+  padding: 11px 13px;
+  border: 2px solid var(--line); border-radius: 12px;
+  background: var(--surface);
+  font: inherit; font-size: 15px; color: var(--ink);
+  outline: 0;
+}
+.row input[type="text"]:focus { border-color: var(--brand); }
+
+.sheet-action {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border: 2px solid var(--line); border-radius: var(--r-sm);
+  background: var(--canvas);
+  font: inherit; font-size: 15px; font-weight: 600; color: var(--ink);
+  text-align: left; cursor: pointer; transition: .18s;
+}
+.sheet-action:hover { border-color: var(--brand); color: var(--brand); }
+.sheet-action svg { color: var(--muted); }
+.sheet-action:hover svg { color: var(--brand); }
+
+/* ===================== Карточка занятия =====================
+   Повторяет рабочий StudioSheet: на телефоне — шторка снизу с ручкой,
+   порядок «преподаватель → описание → фото»; на широком экране —
+   окно по центру, фото и преподаватель в два столбца (7 к 3),
+   описание во всю ширину под ними. */
+#lessonBack { place-items: end center; padding: 0; }
+#lessonSheet {
+  max-width: none;
+  height: 88dvh;
+  display: flex; flex-direction: column;
+  padding: 0;
+  border-width: 2px 0 0;
+  border-radius: 26px 26px 0 0;
+}
+.grabber {
+  flex: none;
+  width: 46px; height: 5px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: var(--line);
+}
+#lessonSheet .sheet-head { flex: none; margin: 0; padding: 14px 20px 12px; }
+#lessonSheet .sheet-head h3 { font-size: 24px; }
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 28px;
+  display: flex; flex-direction: column; gap: 26px;
+}
+/* Без этого блоки как flex-элементы сжимаются под высоту шторки,
+   и квадратное фото преподавателя превращается в узкую полосу. */
+.sheet-body > * { flex: none; }
+/* Обычная студия: сначала преподаватель, потом описание, потом фото. */
+.sheet-body .media   { order: 3; }
+.sheet-body .teacher { order: 1; }
+.sheet-body .desc    { order: 2; }
+
+/* Без преподавателя (мероприятие или зал) порядок другой: сначала фото,
+   потом описание — иначе окно открывается сразу текстом. */
+#lessonSheet.solo .sheet-body .media { order: 1; }
+#lessonSheet.solo .sheet-body .desc  { order: 2; }
+
+.slider, .tphoto {
+  display: grid; place-items: center;
+  border: 2px solid var(--line); border-radius: var(--r-md);
+  background: var(--canvas);
+  color: var(--muted);
+}
+/* Пропорции как в рабочем StudioSheet: фото студии 16:9,
+   фото преподавателя портретное 3:4 и шириной 224px по центру. */
+.slider { aspect-ratio: 16 / 9; }
+.tphoto { aspect-ratio: 3 / 4; width: 224px; margin: 0 auto; }
+
+.cap { margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--muted); }
+.tname { margin: 12px 0 0; text-align: center; font-size: 18px; font-weight: 700; }
+.tname + .cap { margin-top: 2px; }
+
+.desc h4 { margin: 0 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); text-transform: none; }
+.desc .text { margin: 0; font-size: 15px; line-height: 1.65; color: color-mix(in srgb, var(--ink) 80%, transparent); }
+
+@media (min-width: 640px) {
+  #lessonBack { place-items: center; padding: 18px; }
+  #lessonSheet {
+    max-width: 900px;
+    height: auto; max-height: 94dvh;
+    border-width: 2px;
+    border-radius: var(--r-lg);
+  }
+  .grabber { display: none; }
+  #lessonSheet .sheet-head { padding: 18px 24px 14px; }
+  .sheet-body {
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    align-items: start;
+    gap: 16px 16px;
+    padding: 0 24px 28px;
+  }
+  .sheet-body .media   { order: 0; }
+  .sheet-body .teacher { order: 0; }
+  .sheet-body .desc    { order: 0; grid-column: 1 / -1; margin-top: 10px; }
+  /* 16:21 при колонках 7 к 3 даёт ровно ту же высоту, что у фото студии 16:9,
+     поэтому оба снимка стоят вровень. Это же соотношение в оригинале. */
+  .tphoto { width: 100%; margin: 0; aspect-ratio: 16 / 21; }
+  /* Когда преподавателя нет — у мероприятия или у зала вроде «Северстали» —
+     фото занимает всю ширину, как в оригинале. */
+  #lessonSheet.solo .sheet-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .card { padding: 14px 15px; gap: 13px; }
+  .card-body h4 { font-size: 16px; }
+  .now { padding: 18px 19px; }
+  .now h3 { font-size: 23px; }
+  .day-head { padding: 8px 12px; gap: 11px; }
+  .day-name b { font-size: 14px; }
+  .day-num { width: 38px; height: 38px; font-size: 17px; }
+  .day-count { padding: 5px 10px; font-size: 11px; }
+}
+
+/* ===================== Вход ===================== */
+/* На странице входа прячем всё лишнее — как на отдельной странице оригинала. */
+body.auth .tabbar-wrap,
+body.auth .to-top-wrap,
+body.auth .site-footer { display: none; }
+
+/* Ширина колонки задана явно: при place-items:center колонка подстраивалась
+   под самую длинную строку и карточка вылезала за экран на узких окнах. */
+.auth-wrap {
+  display: grid;
+  justify-content: center;
+  grid-template-columns: min(420px, 100%);
+  padding: 30px 0 60px;
+}
+.auth-card {
+  width: 100%;
+  padding: 26px;
+  border: 2px solid var(--line); border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.auth-card h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.auth-card .sub { margin: 6px 0 22px; font-size: 14px; color: var(--muted); }
+.auth-card label { display: block; margin-bottom: 14px; }
+/* Класс намеренно не .cap: он уже занят подписями под фото в карточке занятия,
+   где выравнивание по центру, и подписи полей уезжали в середину. */
+.auth-card .flabel {
+  display: block; margin-bottom: 7px;
+  font-size: 14px; font-weight: 600;
+  text-align: left;
+}
+.field {
+  display: flex; align-items: center; gap: 11px;
+  height: 52px; padding: 0 14px;
+  border: 2px solid var(--line); border-radius: var(--r-sm);
+  background: var(--canvas);
+  transition: .18s;
+}
+.field:focus-within { border-color: var(--brand); }
+.field input {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 15px; color: var(--ink);
+}
+.field svg { color: var(--muted); }
+.field .eye {
+  flex: none;
+  border: 0; background: transparent; color: var(--muted);
+  cursor: pointer; display: grid; place-items: center;
+}
+.field .eye:hover { color: var(--brand); }
+
+.remember { display: flex; align-items: center; gap: 10px; margin: 4px 0 20px; cursor: pointer; }
+.remember input { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+.remember span { font-size: 14px; }
+
+.auth-submit {
+  width: 100%; height: 50px;
+  border: 0; border-radius: var(--r-sm);
+  background: linear-gradient(135deg, var(--brand-light), var(--brand));
+  font: inherit; font-size: 16px; font-weight: 700; color: #fff;
+  cursor: pointer; transition: .18s;
+}
+.auth-submit:hover { filter: brightness(1.06); }
+.auth-back {
+  display: block; width: 100%;
+  margin-top: 16px;
+  border: 0; background: transparent;
+  font: inherit; font-size: 14px; color: var(--muted);
+  text-align: center; cursor: pointer; transition: .18s;
+}
+.auth-back:hover { color: var(--brand); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <!-- Верхняя строка = название текущей страницы. По клику открывается вход. -->
+    <button class="logo" id="brandBtn" title="Войти">
+      <div class="logo-mark">ШКИ</div>
+      <span class="logo-text">
+        <b id="brandText">Расписание</b>
+        <i>Школа креативных индустрий</i>
+      </span>
+    </button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="theme" title="Тема" aria-label="Сменить тему">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+      <button class="icon-btn" id="openSettings" title="Настройки" aria-label="Настройки">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============================================================
+     Страница «Расписание»
+     ============================================================ -->
+<div class="page on" id="pageSchedule">
+
+  <div class="search">
+    <svg class="ic" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input placeholder="Группа или преподаватель…" value="1 группа">
+    <button class="go">Показать</button>
+  </div>
+
+  <!-- Листалка недель + кнопка-дата, открывающая календарь -->
+  <div class="weekbar">
+    <button class="nav" id="prev" title="Прошлая неделя" aria-label="Прошлая неделя">
+      <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button class="range" id="openCal" title="Открыть календарь">
+      <b>
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+        27 июля – 2 августа
+      </b>
+      <i>2026</i>
+    </button>
+    <button class="nav" id="next" title="Следующая неделя" aria-label="Следующая неделя">
+      <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </button>  </div>
+
+  <!-- ================= Понедельник (сегодня) ================= -->
+  <div class="day-head today">
+    <span class="day-num">27</span>
+    <div class="day-name"><b>Понедельник</b><i>июль</i></div>
+    <span class="day-count">3 занятия</span>
+  </div>
+  <div class="cards">
+    <article class="card">
+      <div class="card-time"><span class="from">09:00</span><span class="no">1</span><span class="to">09:40</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Электронная музыка</h4><p>Петров П. П.</p></div>    </article>
+
+    <article class="now">
+      <span class="now-tag"><i class="pulse"></i> Идёт сейчас</span>
+      <h3>Звукорежиссура</h3>
+      <p>Иванов И. И.</p>
+      <div class="now-time">
+        <span>09:50</span>
+        <div class="bar"><i style="width:62%"></i></div>
+        <span>10:30</span>
+      </div>
+    </article>
+
+    <article class="card card-event">
+      <div class="card-time"><span class="from">10:00</span><span class="no">–</span><span class="to">22:00</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Осколки реальности</h4><p>Место: студия «Северсталь»</p></div>    </article>
+
+    <article class="card">
+      <div class="card-time"><span class="from">10:40</span><span class="no">3</span><span class="to">11:20</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Фото-видео производство</h4><p>Кузнецов Д. С.</p></div>    </article>
+  </div>
+
+  <!-- ================= Вторник ================= -->
+  <div class="day-head">
+    <span class="day-num">28</span>
+    <div class="day-name"><b>Вторник</b><i>июль</i></div>
+    <span class="day-count">3 занятия</span>
+  </div>
+  <div class="cards">
+    <article class="card">
+      <div class="card-time"><span class="from">09:00</span><span class="no">1</span><span class="to">09:40</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Звукорежиссура</h4><p>Иванов И. И.</p></div>    </article>
+    <article class="card">
+      <div class="card-time"><span class="from">09:50</span><span class="no">2</span><span class="to">10:30</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Интерактивные технологии VR и AR</h4><p>Смирнов К. О.</p></div>    </article>
+    <article class="card">
+      <div class="card-time"><span class="from">10:40</span><span class="no">3</span><span class="to">11:20</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Анимация и 3D графика</h4><p>Орлова М. И.</p></div>    </article>
+  </div>
+
+  <!-- ================= Среда ================= -->
+  <div class="day-head">
+    <span class="day-num">29</span>
+    <div class="day-name"><b>Среда</b><i>июль</i></div>
+    <span class="day-count">свободно</span>
+  </div>
+  <div class="cards">
+    <div class="empty">Занятий нет</div>
+  </div>
+
+  <!-- ================= Четверг ================= -->
+  <div class="day-head">
+    <span class="day-num">30</span>
+    <div class="day-name"><b>Четверг</b><i>июль</i></div>
+    <span class="day-count">2 занятия</span>
+  </div>
+  <div class="cards">
+    <article class="card">
+      <div class="card-time"><span class="from">09:00</span><span class="no">1</span><span class="to">09:40</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Анимация и 3D графика</h4><p>Орлова М. И.</p></div>    </article>
+    <article class="card">
+      <div class="card-time"><span class="from">09:50</span><span class="no">2</span><span class="to">10:30</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Дизайн</h4><p>Сидорова А. В.</p></div>    </article>
+  </div>
+
+  <!-- ================= Пятница ================= -->
+  <div class="day-head">
+    <span class="day-num">31</span>
+    <div class="day-name"><b>Пятница</b><i>июль</i></div>
+    <span class="day-count">2 занятия</span>
+  </div>
+  <div class="cards">
+    <article class="card">
+      <div class="card-time"><span class="from">09:00</span><span class="no">1</span><span class="to">09:40</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Фото-видео производство</h4><p>Кузнецов Д. С.</p></div>    </article>
+    <article class="card">
+      <div class="card-time"><span class="from">09:50</span><span class="no">2</span><span class="to">10:30</span></div>
+      <div class="card-sep"></div>
+      <div class="card-body"><h4>Электронная музыка</h4><p>Петров П. П.</p></div>    </article>
+  </div>
+
+  <!-- ================= Суббота ================= -->
+  <div class="day-head">
+    <span class="day-num">1</span>
+    <div class="day-name"><b>Суббота</b><i>август</i></div>
+    <span class="day-count">свободно</span>
+  </div>
+  <div class="cards">
+    <div class="empty">Занятий нет</div>
+  </div>
+
+  <!-- ================= Воскресенье ================= -->
+  <div class="day-head">
+    <span class="day-num">2</span>
+    <div class="day-name"><b>Воскресенье</b><i>август</i></div>
+    <span class="day-count">свободно</span>
+  </div>
+  <div class="cards">
+    <div class="empty">Занятий нет</div>
+  </div>
+
+</div><!-- /Расписание -->
+
+<!-- ============================================================
+     Страница «Студии»
+     ============================================================ -->
+<div class="page" id="pageStudios">
+  <div class="studio-grid">
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Фото-видео производство</h4><p>Кузнецов Д. С.</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Интерактивные технологии VR и AR</h4><p>Смирнов К. О.</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Звукорежиссура</h4><p>Иванов И. И.</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Анимация и 3D графика</h4><p>Орлова М. И.</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Дизайн</h4><p>Сидорова А. В.</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card">
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Электронная музыка</h4><p>Петров П. П.</p></div>
+      </div>
+    </article>
+
+    <!-- data-hall: залы без преподавателя — в карточке показывается только фото -->
+    <article class="studio-card" data-hall>
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Лекторий ШКИ</h4><p>Общий зал</p></div>
+      </div>
+    </article>
+
+    <article class="studio-card" data-hall>
+      <div class="shot"><svg class="ic" viewBox="0 0 24 24" style="width:36px;height:36px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+      <div class="body">
+        <div><h4>Студия «Северсталь»</h4><p>Зал мероприятий</p></div>
+      </div>
+    </article>
+  </div>
+</div><!-- /Студии -->
+
+<!-- ============================================================
+     Страница «События»
+     ============================================================ -->
+<div class="page" id="pageEvents">
+  <div class="event-list">
+    <article class="event-card">
+      <div class="event-date"><b>27</b><i>июл</i></div>
+      <div class="event-body">
+        <h4>Осколки реальности</h4>
+        <p>10:00 – 22:00 · студия «Северсталь»</p>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="event-date"><b>14</b><i>авг</i></div>
+      <div class="event-body">
+        <h4>День открытых дверей</h4>
+        <p>12:00 – 16:00 · лекторий ШКИ</p>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="event-date"><b>02</b><i>сен</i></div>
+      <div class="event-body">
+        <h4>Посвящение в студийцы</h4>
+        <p>15:00 – 18:00 · студия «Северсталь»</p>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="event-date"><b>19</b><i>окт</i></div>
+      <div class="event-body">
+        <h4>Фестиваль короткого метра</h4>
+        <p>11:00 – 20:00 · лекторий ШКИ</p>
+      </div>
+    </article>
+  </div>
+</div><!-- /События -->
+
+<!-- ============================================================
+     Страница входа — открывается по клику на заголовок в шапке
+     ============================================================ -->
+<div class="page" id="pageAuth">
+  <div class="auth-wrap">
+    <form class="auth-card" onsubmit="return false">
+      <h1>Вход</h1>
+      <p class="sub">Войдите, чтобы управлять расписанием</p>
+
+      <label>
+        <span class="flabel">Логин</span>
+        <div class="field">
+          <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input placeholder="Введите логин" autocomplete="username">
+        </div>
+      </label>
+
+      <label>
+        <span class="flabel">Пароль</span>
+        <div class="field">
+          <svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="authPass" placeholder="Введите пароль" autocomplete="current-password">
+          <button type="button" class="eye" id="eyeBtn" aria-label="Показать пароль">
+            <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </label>
+
+      <label class="remember">
+        <input type="checkbox">
+        <span>Запомнить меня</span>
+      </label>
+
+      <button type="submit" class="auth-submit">Войти</button>
+      <button type="button" class="auth-back" id="authBack">Вернуться к расписанию</button>
+    </form>
+  </div>
+</div><!-- /Вход -->
+
+</div>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <p class="school">Школа креативных индустрий г. Строитель</p>
+    <div class="links">
+      <a href="https://vk.com/shkistroitel">ВКонтакте</a>
+      <a href="https://vk.com/away.php?to=https%3A%2F%2Fweb.max.ru%2F-69221720244297&utf=1">MAX</a>
+      <a href="https://rutube.ru/channel/77788736/">RUTUBE</a>
+    </div>
+    <a class="author" href="https://vk.com/kir1lka">Made by kirill</a>
+  </div>
+</footer>
+
+<!-- Календарь: открывается по клику на дату в листалке недель -->
+<div class="cal-back" id="calBack">
+  <div class="cal" id="cal">
+    <div class="cal-top">
+      <button title="Прошлый месяц" aria-label="Прошлый месяц">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <b>Июль 2026</b>
+      <button title="Следующий месяц" aria-label="Следующий месяц">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">пн</div><div class="cal-dow">вт</div><div class="cal-dow">ср</div>
+      <div class="cal-dow">чт</div><div class="cal-dow">пт</div><div class="cal-dow">сб</div>
+      <div class="cal-dow">вс</div>
+
+      <button class="cal-day dim">29</button><button class="cal-day dim">30</button>
+      <button class="cal-day">1</button><button class="cal-day">2</button>
+      <button class="cal-day">3</button><button class="cal-day">4</button><button class="cal-day">5</button>
+
+      <button class="cal-day">6</button><button class="cal-day">7</button><button class="cal-day">8</button>
+      <button class="cal-day">9</button><button class="cal-day">10</button>
+      <button class="cal-day">11</button><button class="cal-day">12</button>
+
+      <button class="cal-day">13</button><button class="cal-day">14</button><button class="cal-day">15</button>
+      <button class="cal-day">16</button><button class="cal-day">17</button>
+      <button class="cal-day">18</button><button class="cal-day">19</button>
+
+      <button class="cal-day">20</button><button class="cal-day">21</button><button class="cal-day">22</button>
+      <button class="cal-day">23</button><button class="cal-day">24</button>
+      <button class="cal-day">25</button><button class="cal-day">26</button>
+
+      <button class="cal-day on week-start">27</button>
+      <button class="cal-day in-week">28</button>
+      <button class="cal-day in-week">29</button>
+      <button class="cal-day in-week">30</button>
+      <button class="cal-day in-week">31</button>
+      <button class="cal-day in-week dim">1</button>
+      <button class="cal-day in-week week-end dim">2</button>
+    </div>
+
+    <button class="cal-now">
+      <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      Текущая неделя
+    </button>
+  </div>
+</div>
+
+<!-- Кнопка «наверх»: появляется, когда страница прокручена -->
+<div class="to-top-wrap">
+  <button class="to-top" id="toTop" title="Наверх" aria-label="Наверх">
+    <svg class="ic" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+  </button>
+</div>
+
+<!-- Настройки -->
+<div class="sheet-back" id="settingsBack">
+  <div class="sheet" id="settingsSheet">
+    <div class="sheet-head">
+      <h3>Настройки</h3>
+      <button class="sheet-close" data-close aria-label="Закрыть">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="row col">
+      <div class="top">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 3 9 15"/><path d="M15 3h6v6"/><path d="M3 21h6v-6"/><path d="M3 21 15 9"/></svg>
+        <span class="label">Масштаб</span>
+        <span class="val" id="zoomVal">100%</span>
+      </div>
+      <input type="range" min="70" max="130" step="5" value="100" id="zoomRange">
+    </div>
+
+    <div class="row col">
+      <div class="top">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11.5 2.8a.6.6 0 0 1 1 0l2.3 4.7 5.2.7a.6.6 0 0 1 .3 1l-3.7 3.7.9 5.1a.6.6 0 0 1-.9.7L12 16.3l-4.6 2.4a.6.6 0 0 1-.9-.7l.9-5.1L3.7 9.2a.6.6 0 0 1 .3-1l5.2-.7z"/></svg>
+        <span class="label">Открывать при входе</span>
+      </div>
+      <input type="text" placeholder="№ группы или имя преподавателя">
+    </div>
+
+    <button class="sheet-action">
+      <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M21 8.5c0-3.6-2.9-6.5-6.5-6.5h-5A6.5 6.5 0 0 0 3 8.5c0 5.6-1.5 7.5-2 8.5h22c-.5-1-2-2.9-2-8.5"/></svg>
+      Включить уведомления о мероприятиях
+    </button>
+  </div>
+</div>
+
+<!-- Карточка занятия: открывается по клику на занятие -->
+<div class="sheet-back" id="lessonBack">
+  <div class="sheet" id="lessonSheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h3 id="lessonTitle">Звукорежиссура</h3>
+      <button class="sheet-close" data-close aria-label="Закрыть">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="sheet-body">
+      <div class="media">
+        <div class="slider">
+          <svg class="ic" viewBox="0 0 24 24" style="width:44px;height:44px"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+        </div>
+        <p class="cap" id="lessonPhotoCap">Фото студии</p>
+      </div>
+
+      <div class="teacher">
+        <div class="tphoto">
+          <svg class="ic" viewBox="0 0 24 24" style="width:40px;height:40px"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <p class="tname" id="lessonTeacher">Иванов И. И.</p>
+        <p class="cap">Преподаватель студии</p>
+      </div>
+
+      <div class="desc">
+        <h4 id="lessonDescTitle">Описание</h4>
+        <p class="text">
+          Студия звукорежиссуры: запись и сведение, работа с микрофонами и пультом,
+          основы монтажа звука. Занятия проходят в оборудованной студии с изолированной
+          кабиной для записи вокала и речи.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tabbar-wrap">
+  <nav class="tabbar">
+    <button class="on">Расписание</button>
+    <button>Студии</button>
+    <button>События</button>
+  </nav>
+</div>
+
+<script>
+// Косметика для просмотра макета. Логики приложения здесь нет:
+// ничего не сохраняется и никуда не отправляется.
+const root = document.documentElement;
+
+// --- Тема: переключается кнопкой в шапке ---
+document.getElementById('theme').onclick = () => {
+  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+};
+
+// --- Общее поведение всплывающих окон: фон, крестик и Escape закрывают ---
+const overlays = [...document.querySelectorAll('.cal-back, .sheet-back')];
+const closeAll = () => overlays.forEach(o => o.classList.remove('on'));
+const open = (el) => { closeAll(); el.classList.add('on'); };
+
+overlays.forEach(o => {
+  o.addEventListener('click', (e) => { if (e.target === o) o.classList.remove('on'); });
+});
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.onclick = () => b.closest('.sheet-back, .cal-back').classList.remove('on');
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+
+// --- Календарь ---
+const calBack = document.getElementById('calBack');
+document.getElementById('openCal').onclick = () => open(calBack);
+document.querySelectorAll('.cal-day, .cal-now').forEach(d => {
+  d.onclick = () => calBack.classList.remove('on');
+});
+
+// --- Настройки ---
+document.getElementById('openSettings').onclick = () => open(document.getElementById('settingsBack'));
+const zoomRange = document.getElementById('zoomRange');
+zoomRange.oninput = () => { document.getElementById('zoomVal').textContent = zoomRange.value + '%'; };
+
+// --- Карточка занятия: подставляем данные того занятия, по которому кликнули ---
+// У мероприятия преподавателя нет, поэтому его блок скрывается, а подписи
+// меняются на «Фото мероприятия» и «Мероприятие» — как в рабочем StudioSheet.
+const lessonBack = document.getElementById('lessonBack');
+const teacherBlock = document.querySelector('#lessonSheet .teacher');
+
+// noTeacher — для залов (лекторий, «Северсталь»): преподавателя у них нет,
+// поэтому блок с портретом скрывается, а фото растягивается на всю ширину.
+function openLesson(title, who, { isEvent = false, noTeacher = false } = {}) {
+  const solo = isEvent || noTeacher;
+  document.getElementById('lessonTitle').textContent = title;
+  document.getElementById('lessonTeacher').textContent = who;
+  document.getElementById('lessonPhotoCap').textContent =
+    isEvent ? 'Фото мероприятия' : noTeacher ? 'Фото' : 'Фото студии';
+  document.getElementById('lessonDescTitle').textContent = isEvent ? 'Мероприятие' : 'Описание';
+  teacherBlock.style.display = solo ? 'none' : '';
+  document.getElementById('lessonSheet').classList.toggle('solo', solo);
+  open(lessonBack);
+}
+
+// Занятия в расписании
+document.querySelectorAll('.card, .now').forEach(card => {
+  card.onclick = () => {
+    const isNow = card.classList.contains('now');
+    const isEvent = card.classList.contains('card-event');
+    openLesson(
+      card.querySelector(isNow ? 'h3' : '.card-body h4').textContent.trim(),
+      card.querySelector(isNow ? 'p' : '.card-body p').textContent.trim(),
+      { isEvent },
+    );
+  };
+});
+
+// Те же карточки на страницах «Студии» и «События»
+document.querySelectorAll('.studio-card').forEach(c => {
+  c.onclick = () => openLesson(
+    c.querySelector('h4').textContent.trim(),
+    c.querySelector('p').textContent.trim(),
+    { noTeacher: c.hasAttribute('data-hall') },
+  );
+});
+document.querySelectorAll('.event-card').forEach(c => {
+  c.onclick = () => openLesson(
+    c.querySelector('h4').textContent.trim(),
+    c.querySelector('p').textContent.trim(),
+    { isEvent: true },
+  );
+});
+
+// --- Кнопка «наверх» ---
+const toTop = document.getElementById('toTop');
+const onScroll = () => toTop.classList.toggle('show', window.scrollY > 300);
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+toTop.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+// --- Страницы: нижняя навигация плюс отдельная страница входа ---
+const PAGES = ['pageSchedule', 'pageStudios', 'pageEvents'];
+const TITLES = ['Расписание', 'Студии', 'События'];
+const brandText = document.getElementById('brandText');
+const tabs = [...document.querySelectorAll('.tabbar button')];
+let lastTab = 0;
+
+function showPage(id) {
+  [...PAGES, 'pageAuth'].forEach(p => document.getElementById(p).classList.toggle('on', p === id));
+  // На входе прячем нижнюю панель, подвал и кнопку «наверх».
+  document.body.classList.toggle('auth', id === 'pageAuth');
+  brandText.textContent = id === 'pageAuth' ? 'Вход' : TITLES[PAGES.indexOf(id)];
+  window.scrollTo({ top: 0 });
+}
+
+tabs.forEach((b, i) => {
+  b.onclick = () => {
+    tabs.forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    lastTab = i;
+    showPage(PAGES[i]);
+  };
+});
+
+// Заголовок в шапке открывает вход, «Вернуться к расписанию» — обратно.
+document.getElementById('brandBtn').onclick = () => showPage('pageAuth');
+document.getElementById('authBack').onclick = () => showPage(PAGES[lastTab]);
+
+// Показать/скрыть пароль — вместе с типом поля меняется и сам значок,
+// иначе кнопка выглядит нерабочей.
+const pass = document.getElementById('authPass');
+const eyeBtn = document.getElementById('eyeBtn');
+const EYE = '<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.7 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.4 3.4"/><path d="M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/><path d="m9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></svg>';
+eyeBtn.onclick = () => {
+  const show = pass.type === 'password';
+  pass.type = show ? 'text' : 'password';
+  eyeBtn.innerHTML = show ? EYE_OFF : EYE;
+  eyeBtn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
+};
+</script>
+
+</body>
+</html>

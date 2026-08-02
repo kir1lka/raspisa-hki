@@ -27,6 +27,9 @@ services:
       DB_USERNAME: raspisa
       DB_PASSWORD: raspisa
       SERVER_PORT: 8080
+      # Во сколько рассылать напоминание в день мероприятия (см. EventReminderService).
+      REMINDER_CRON: ${REMINDER_CRON:-0 0 8 * * *}
+      REMINDER_ZONE: ${REMINDER_ZONE:-Europe/Moscow}
     ports:
       - "8080:8080"                       # сайт будет на http://localhost:8080
     # Если Java-процесс упадёт (ошибка, OutOfMemory) или ПК перезагрузится —

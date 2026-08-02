@@ -302,6 +302,8 @@ function EventModal({ form, setForm, onClose, onSaved }) {
   const isEdit = form.id != null
   useBodyScrollLock(true)
   const photoInput = useRef(null)
+  // Адрес фото, открытого на весь экран (null — просмотр закрыт).
+  const [lightbox, setLightbox] = useState(null)
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
 
   async function addPhotos(files) {
@@ -348,6 +350,7 @@ function EventModal({ form, setForm, onClose, onSaved }) {
   }
 
   return createPortal(
+    <>
     <div className={modalWrap}>
       <form onSubmit={save} className={modalBox}>
         <div className="mb-5 flex items-center justify-between">
@@ -402,7 +405,9 @@ function EventModal({ form, setForm, onClose, onSaved }) {
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {(form.photos ?? []).map((src, i) => (
               <div key={i} className="group relative aspect-square overflow-hidden rounded-card border-2 border-line">
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <button type="button" onClick={() => setLightbox(src)} className="block h-full w-full" title="Открыть фото">
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
                 <button
                   type="button"
                   onClick={() => set({ photos: form.photos.filter((_, j) => j !== i) })}
@@ -439,7 +444,22 @@ function EventModal({ form, setForm, onClose, onSaved }) {
           </button>
         </div>
       </form>
-    </div>,
+    </div>
+
+    {lightbox && (
+      <div className="fixed inset-0 z-[80] grid place-items-center bg-black/90 p-4" onClick={() => setLightbox(null)}>
+        <img src={lightbox} alt="Фото" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+        <button
+          type="button"
+          onClick={() => setLightbox(null)}
+          aria-label="Закрыть"
+          className="absolute top-4 right-4 grid size-11 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/30"
+        >
+          <X className="size-6" />
+        </button>
+      </div>
+    )}
+    </>,
     document.body,
   )
 }

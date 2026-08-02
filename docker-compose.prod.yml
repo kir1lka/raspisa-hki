@@ -32,6 +32,10 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
+      # Напоминание в день мероприятия. По умолчанию 08:00 по Москве —
+      # менять нужно только если хочется другое время рассылки.
+      REMINDER_CRON: ${REMINDER_CRON:-0 0 8 * * *}
+      REMINDER_ZONE: ${REMINDER_ZONE:-Europe/Moscow}
     expose:
       - "8080"          # внутренний порт — наружу НЕ публикуем (доступ только через Caddy)
     restart: unless-stopped

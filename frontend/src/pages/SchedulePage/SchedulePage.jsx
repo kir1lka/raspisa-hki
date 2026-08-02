@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { CalendarSearch } from 'lucide-react'
 import Logo from '../../components/Logo/Logo'
 import SearchBar from '../../components/SearchBar/SearchBar'
@@ -17,6 +17,10 @@ import { mondayOf, addDays, sameDay, defaultWeekStart } from '../../dates'
 export default function SchedulePage({ base = '' }) {
   const { number, teacherId } = useParams()
   const navigate = useNavigate()
+  // location.key меняется при КАЖДОМ переходе, даже если адрес тот же самый.
+  // По нему отличаем повторный выбор той же группы от отсутствия перехода:
+  // number/teacherId в этом случае не меняются, и эффекты сами бы не сработали.
+  const { key: navKey } = useLocation()
   const selection = number || teacherId
 
   const [query, setQuery] = useState('')
@@ -53,14 +57,14 @@ export default function SchedulePage({ base = '' }) {
 
   useEffect(() => {
     if (number) setQuery(`${number} группа`)
-  }, [number])
+  }, [number, navKey])
 
   useEffect(() => {
     if (teacherId && teachers.length) {
       const t = teachers.find((x) => String(x.id) === String(teacherId))
       if (t) setQuery(t.fullName)
     }
-  }, [teacherId, teachers])
+  }, [teacherId, teachers, navKey])
 
   useEffect(() => {
     if (!selection) {
@@ -74,7 +78,7 @@ export default function SchedulePage({ base = '' }) {
       .then(setLessons)
       .catch((e) => { setError(e.message); setLessons([]) })
       .finally(() => setLoading(false))
-  }, [number, teacherId, selection])
+  }, [number, teacherId, selection, navKey])
 
   useEffect(() => {
     setMonday((m) => (sameDay(m, defaultWeekStart()) ? m : defaultWeekStart()))
