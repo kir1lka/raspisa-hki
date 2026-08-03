@@ -51,6 +51,26 @@ export function fmtWeekRange(monday) {
   return `${fmtShort(monday)} – ${fmtShort(addDays(monday, 6))}`
 }
 
+/**
+ * Диапазон недели с сокращёнными месяцами: «14 – 20 сен», «28 сен – 4 окт».
+ * Полные названия занимали две строки и ломали панель на узких экранах,
+ * поэтому месяц пишем коротко и не повторяем, если неделя внутри одного месяца.
+ */
+export function fmtWeekRangeLong(monday) {
+  const sunday = addDays(monday, 6)
+  if (monday.getMonth() === sunday.getMonth()) {
+    return `${monday.getDate()} – ${sunday.getDate()} ${MONTHS_SHORT[monday.getMonth()]}`
+  }
+  return `${fmtShort(monday)} – ${fmtShort(sunday)}`
+}
+
+/** Год недели. Если неделя переходит через Новый год — показываем оба. */
+export function weekYears(monday) {
+  const a = monday.getFullYear()
+  const b = addDays(monday, 6).getFullYear()
+  return a === b ? String(a) : `${a}–${b}`
+}
+
 const VACATIONS = [
   ['2025-10-26', '2025-11-04'],
   ['2025-12-31', '2026-01-11'],

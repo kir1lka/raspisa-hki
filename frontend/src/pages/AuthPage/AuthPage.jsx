@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, User, Lock, LoaderCircle } from 'lucide-react'
-import Logo from '../../components/Logo/Logo'
 import { login as apiLogin } from '../../api'
 import { setUser } from '../../auth'
 
@@ -37,11 +36,9 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-start px-4 py-10 sm:justify-center">
-      <Logo />
-
       <form
         onSubmit={handleSubmit}
-        className="mt-8 w-full max-w-md rounded-card border-2 border-line bg-surface p-6 shadow-xl sm:p-8"
+        className="w-full max-w-md rounded-card border-2 border-line bg-surface p-6 shadow-xl sm:p-8"
       >
         <h1 className="text-2xl font-bold text-ink">Вход</h1>
         <p className="mt-1 text-sm text-muted">Войдите, чтобы управлять расписанием</p>
@@ -78,7 +75,9 @@ export default function AuthPage() {
               className="shrink-0 text-muted transition hover:text-brand active:scale-95"
               aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
             >
-              {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              {/* Значок показывает текущее состояние: пароль скрыт — глаз
+                  перечёркнут, пароль виден — глаз открыт. */}
+              {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
             </button>
           </div>
         </label>

@@ -1,112 +1,97 @@
-import { useState } from 'react'
-import { ChevronRight, Sparkles } from 'lucide-react'
 import { hhmm, endTime, isCurrentLesson, shortName } from '../../utils'
-import studioVr from '../../assets/studio-vr.png'
-import studioDesign from '../../assets/studio-design.png'
-import studioSound from '../../assets/studio-sound.png'
-import studioPhoto from '../../assets/studio-photo.png'
-import studioAnimation from '../../assets/studio-animation.png'
-import studioMusic from '../../assets/studio-music.png'
-import studioEvent from '../../assets/studio-event.png'
 
-const SHOW_ILLUSTRATION = false
+const toMinutes = (t) => {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
 
-function illustrationFor(name) {
-  const n = (name || '').toLowerCase()
-  if (n.includes('vr') || n.includes('интерактив')) return studioVr
-  if (n.includes('дизайн')) return studioDesign
-  if (n.includes('звук')) return studioSound
-  if (n.includes('фото') || n.includes('видео')) return studioPhoto
-  if (n.includes('анимац')) return studioAnimation
-  if (n.includes('электрон') || n.includes('музык')) return studioMusic
-  return studioVr
+/** Доля пройденного времени занятия, 0…1 — для полосы на карточке «идёт сейчас». */
+function progressOf(lesson, now = new Date()) {
+  const start = toMinutes(lesson.time)
+  const finish = toMinutes(lesson.special && lesson.endTime ? lesson.endTime : endTime(lesson.time))
+  const cur = now.getHours() * 60 + now.getMinutes()
+  if (finish <= start) return 0
+  return Math.min(1, Math.max(0, (cur - start) / (finish - start)))
 }
 
 export default function LessonCard({ lesson, index = 0, byTeacher = false, highlightCurrent = true, onOpenStudio }) {
-  const illustration = lesson.special ? studioEvent : illustrationFor(lesson.studioName)
-  const current = highlightCurrent && isCurrentLesson(lesson)
-  const [pulseKey, setPulseKey] = useState(0)
+  // Крупный вид «идёт сейчас» — только для обычных занятий. Мероприятие
+  // длится часами, и полоса прогресса на нём смысла не имеет.
+  const current = highlightCurrent && !lesson.special && isCurrentLesson(lesson)
+  const finish = lesson.special && lesson.endTime ? hhmm(lesson.endTime) : endTime(lesson.time)
+
+  const title = lesson.special
+    ? lesson.title || lesson.studioName
+    : byTeacher
+      ? `${lesson.groupNumber} группа`
+      : lesson.studioName
+
+  const subtitle = lesson.special
+    ? `Место: ${lesson.studioName}`
+    : byTeacher
+      ? lesson.studioName
+      : shortName(lesson.teacherName)
+
+  // Идущее сейчас занятие разворачивается в крупную карточку, но остаётся
+  // на своём месте в списке дня, а не уезжает отдельным блоком наверх.
+  if (current) {
+    return (
+      <article
+        id={`lesson-${lesson.id}`}
+        style={{ animationDelay: `${index * 60}ms` }}
+        onClick={() => onOpenStudio?.(lesson)}
+        className="relative animate-fade-up cursor-pointer overflow-hidden rounded-sheet bg-gradient-to-br from-brand-light to-brand px-6 py-5 text-white shadow-[0_20px_44px_-22px_var(--color-brand)] transition select-none hover:-translate-y-0.5 active:scale-[0.99]"
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-28 -right-16 size-64 rounded-full bg-white/15"
+        />
+        <span className="relative inline-flex items-center gap-2 rounded-full bg-white/25 px-3 py-1.5 text-[11px] font-extrabold tracking-[0.14em] uppercase">
+          <i className="size-[7px] animate-pulse rounded-full bg-white" />
+          Идёт сейчас
+        </span>
+        <h3 className="relative mt-3.5 text-[28px] leading-tight font-extrabold tracking-tight">{title}</h3>
+        <p className="relative mt-1 text-[15px] opacity-90">{subtitle}</p>
+        <div className="relative mt-4 flex items-center gap-2.5 text-[15px] font-bold tabular-nums">
+          <span>{hhmm(lesson.time)}</span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/30">
+            <i className="block h-full rounded-full bg-white" style={{ width: `${progressOf(lesson) * 100}%` }} />
+          </span>
+          <span>{finish}</span>
+        </div>
+      </article>
+    )
+  }
 
   return (
     <article
       id={`lesson-${lesson.id}`}
       style={{ animationDelay: `${index * 60}ms` }}
-      onClick={() => {
-        setPulseKey((k) => k + 1)
-        onOpenStudio?.(lesson)
-      }}
+      onClick={() => onOpenStudio?.(lesson)}
       className={
-        'group relative flex min-h-[120px] animate-fade-up cursor-pointer overflow-hidden rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] bg-surface transition duration-150 select-none hover:border-accent active:scale-[0.98] active:border-accent md:min-h-[160px] ' +
-        (current ? 'border-brand' : 'border-line')
+        'flex animate-fade-up cursor-pointer items-stretch gap-4 rounded-card px-5 py-4 transition select-none hover:-translate-y-0.5 active:scale-[0.99] ' +
+        (lesson.special
+          ? 'border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-transparent [background:linear-gradient(var(--color-surface),var(--color-surface))_padding-box,linear-gradient(135deg,var(--color-brand-ring),var(--color-brand))_border-box]'
+          : 'border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface hover:border-brand')
       }
     >
-      {pulseKey > 0 && (
-        <span
-          key={pulseKey}
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-20 animate-click-pulse rounded-card"
-        />
-      )}
-
-      {SHOW_ILLUSTRATION && (
-        <div
-          aria-hidden
-          className={
-            'pointer-events-none absolute inset-0 transition-colors ' +
-            (current ? 'bg-brand group-hover:bg-accent' : 'bg-line/70')
-          }
-          style={{
-            WebkitMaskImage: `url(${illustration})`,
-            maskImage: `url(${illustration})`,
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'right center',
-            maskPosition: 'right center',
-            WebkitMaskSize: 'auto 100%',
-            maskSize: 'auto 100%',
-          }}
-        />
-      )}
-
-      <div className="relative z-10 flex w-20 shrink-0 flex-col items-center justify-between py-5 md:w-28 md:py-7">
-        <span className="text-base text-ink md:text-2xl">{hhmm(lesson.time)}</span>
-
-        {!lesson.special ? (
-          <span className="relative text-2xl font-bold text-ink md:text-[32px]">
-            {current && (
-              <ChevronRight
-                className="absolute top-1/2 right-full mr-1 size-5 -translate-y-1/2 text-brand transition-colors group-hover:text-accent md:size-6"
-                strokeWidth={2.5}
-              />
-            )}
-            {lesson.orderNumber}
-          </span>
-        ) : (
-          <span className="text-3xl leading-none font-bold text-muted md:text-4xl">–</span>
-        )}
-        <span className="text-base text-ink md:text-2xl">
-          {lesson.special && lesson.endTime ? hhmm(lesson.endTime) : endTime(lesson.time)}
+      <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-1 tabular-nums">
+        <span className="text-[15px] font-bold text-ink">{hhmm(lesson.time)}</span>
+        <span className="grid size-7 place-items-center rounded-[9px] bg-canvas text-[13px] font-extrabold text-ink">
+          {lesson.special ? '–' : lesson.orderNumber}
         </span>
+        <span className="text-[13px] text-muted">{finish}</span>
       </div>
 
-      <div className="relative z-10 my-5 w-0.5 shrink-0 self-stretch rounded-card bg-sep md:my-7" />
+      <div className="w-0.5 shrink-0 self-stretch rounded-full bg-line" />
 
-      <div className="relative z-10 flex flex-col justify-center gap-2 px-5 py-5 md:px-7">
-        <h3 className="text-halo text-xl font-medium leading-tight text-ink md:text-[32px]">
-          {lesson.special && <Sparkles className="mr-1.5 inline-block size-5 align-[-0.15em] text-brand md:size-7" />}
-          {lesson.special
-            ? lesson.title || lesson.studioName
-            : byTeacher
-              ? `${lesson.groupNumber} группа`
-              : lesson.studioName}
+      <div className="flex min-w-0 flex-col justify-center gap-1">
+        <h3 className="flex items-center gap-2 text-[18px] leading-tight font-bold tracking-tight text-ink">
+          {/* Символ, а не иконка из набора — так живее, как в макете */}
+          {lesson.special && <span className="shrink-0 text-[1.2em] leading-none text-brand">✦</span>}
+          {title}
         </h3>
-        <p className="text-halo text-sm text-ink md:text-xl">
-          {lesson.special
-            ? `Место: ${lesson.studioName}`
-            : byTeacher
-              ? lesson.studioName
-              : `пр. ${shortName(lesson.teacherName)}`}
-        </p>
+        <p className="text-sm text-muted">{subtitle}</p>
       </div>
     </article>
   )

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CalendarSearch } from 'lucide-react'
-import Logo from '../../components/Logo/Logo'
+import AppHeader from '../../components/AppHeader/AppHeader'
+import TabBar from '../../components/TabBar/TabBar'
 import SearchBar from '../../components/SearchBar/SearchBar'
 import WeekBar from '../../components/WeekBar/WeekBar'
 import Schedule from '../../components/Schedule/Schedule'
 import ScheduleSkeleton from '../../components/ScheduleSkeleton/ScheduleSkeleton'
 import ScrollTopButton from '../../components/ScrollTopButton/ScrollTopButton'
 import SettingsModal from '../../components/SettingsModal/SettingsModal'
+import SiteFooter from '../../components/SiteFooter/SiteFooter'
 import CalendarModal from '../../components/CalendarModal/CalendarModal'
 import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import { fetchGroupLessons, fetchTeacherLessons, fetchGroups, fetchTeachers, fetchHolidays, fetchStudios } from '../../api'
@@ -111,16 +112,23 @@ export default function SchedulePage({ base = '' }) {
   }, [monday])
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    /* --ui-base:1 — на публичных страницах интерфейс в натуральную величину,
+       как в макете. Глобально его менять нельзя: тем же множителем ужимается
+       админ-панель, а её мы не трогаем. */
+    <div className="flex min-h-[100dvh] flex-col [--ui-base:1]">
 
-      <div className="pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex max-w-[1140px] justify-center px-3 pt-4 pb-4 md:px-6 md:pt-6 md:pb-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
-          <Logo to={base ? '/dashboard' : '/login'} />
-        </div>
-      </div>
+      <AppHeader
+        title="Расписание"
+        to={base ? '/dashboard' : '/login'}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
       <div>
-        <div className="mx-auto max-w-[1140px] px-3 pb-3 md:px-6 md:pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+        {/* pt-[18px] и pb-11 добиваются отступов из макета: 34px до поиска
+            (16 даёт шапка) и 44px от панели недели до первой плашки дня. */}
+        <div className="mx-auto max-w-[772px] px-3 pt-[18px] pb-11 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
           <SearchBar
             query={query}
             onQueryChange={setQuery}
@@ -128,7 +136,6 @@ export default function SchedulePage({ base = '' }) {
             teachers={teachers}
             onSelectGroup={(n) => navigate(`${base}/group/${n}`)}
             onSelectTeacher={(id) => navigate(`${base}/teacher/${id}`)}
-            onOpenSettings={() => setSettingsOpen(true)}
           />
 
           {selection && (
@@ -145,31 +152,26 @@ export default function SchedulePage({ base = '' }) {
       <main className="flex flex-1 flex-col">
 
         {(!selection || error || (selection && !loading && lessons.length === 0)) && (
-          <div className="flex flex-1 items-center justify-center px-6 py-12">
-            <div className="flex max-w-xl flex-col items-center gap-6 text-center [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+          <div className="mx-auto flex w-full max-w-[772px] flex-1 items-center px-3 pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+            <div className="flex w-full flex-col items-center gap-3 px-6 py-14 text-center">
               {!selection && (
                 <>
-                  <CalendarSearch
-                    className="size-16 text-muted md:size-24"
-                    style={{ strokeWidth: 1.25 }}
-                  />
-                  <p className="text-xl font-medium text-muted md:text-3xl">
-                    Введите номер группы или имя преподавателя, чтобы увидеть расписание
+                  <p className="max-w-sm text-lg leading-snug font-semibold text-ink">
+                    Введите номер группы или имя преподавателя
                   </p>
+                  <p className="text-sm text-muted">Расписание появится здесь</p>
                 </>
               )}
-              {error && (
-                <p className="text-2xl font-medium text-red-700 md:text-4xl">{error}</p>
-              )}
+              {error && <p className="text-lg font-semibold text-red-600">{error}</p>}
               {selection && !loading && !error && lessons.length === 0 && (
-                <p className="text-2xl font-medium text-muted md:text-4xl">Расписание не найдено</p>
+                <p className="text-lg font-semibold text-muted">Расписание не найдено</p>
               )}
             </div>
           </div>
         )}
 
         {selection && (loading || lessons.length > 0) && (
-          <div className="mx-auto w-full max-w-[1140px] px-3 pb-10 md:px-6 md:pb-14 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+          <div className="mx-auto w-full max-w-[772px] px-3 pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
             {loading ? (
               <ScheduleSkeleton />
             ) : (
@@ -185,19 +187,13 @@ export default function SchedulePage({ base = '' }) {
         )}
       </main>
 
-      <footer className="border-t border-line pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto max-w-[1140px] px-3 py-7 text-center  text-muted md:px-6">
-          <p className="text-base font-medium">Школа креативных индустрий г. Строитель</p>
-          <div className="mt-3 mb-3 flex flex-wrap justify-center gap-x-6 gap-y-2 text-base underline ">
-            <a href="https://vk.com/shkistroitel" className="transition-colors hover:text-brand">ВКонтакте</a>
-            <a href="https://vk.com/away.php?to=https%3A%2F%2Fweb.max.ru%2F-69221720244297&utf=1" className="transition-colors hover:text-brand">MAX</a>
-            <a href="https://rutube.ru/channel/77788736/" className="transition-colors hover:text-brand">RUTUBE</a>
-          </div>
-          <a href="https://vk.com/kir1lka" className="text-sm text-muted/70 transition-colors hover:text-brand ">Made by kirill</a>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <ScrollTopButton />
+
+      {/* В админ-панели нижняя навигация не нужна: она появляется только
+          когда открыто расписание найденной группы или преподавателя. */}
+      {(!base || selection) && <TabBar active="schedule" />}
 
       <SettingsModal
         open={settingsOpen}
@@ -208,6 +204,7 @@ export default function SchedulePage({ base = '' }) {
         onZoomChange={setZoom}
         groups={groups}
         teachers={teachers}
+        showTheme={false}
       />
 
       {calendarOpen && (

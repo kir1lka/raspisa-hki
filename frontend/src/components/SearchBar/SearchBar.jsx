@@ -65,19 +65,19 @@ export default function SearchBar({
       <div className="relative min-w-0 flex-1">
         <form
           onSubmit={handleSubmit}
-          className="flex h-14 w-full items-center gap-3 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface px-5 transition-colors hover:border-brand focus-within:border-brand md:h-20"
+          className="flex h-[62px] w-full items-center gap-3 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface px-5 transition-colors hover:border-brand focus-within:border-brand"
         >
-          <Search className="size-7 shrink-0 text-muted md:size-11" strokeWidth={2.5} />
+          <Search className="size-6 shrink-0 text-muted" strokeWidth={2.2} />
           <input
             className={
-              'min-w-0 flex-1 bg-transparent text-xl outline-none placeholder:text-muted/70 md:text-3xl ' +
+              'min-w-0 flex-1 bg-transparent text-lg outline-none placeholder:text-muted/70 ' +
               (open ? 'text-ink' : 'text-muted')
             }
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             onFocus={() => setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 120)}
-            placeholder="Введите № группы"
+            placeholder="Группа или преподаватель…"
           />
           {String(query).length > 0 && (
             <button
@@ -88,9 +88,9 @@ export default function SearchBar({
                 e.preventDefault()
                 onQueryChange('')
               }}
-              className="grid size-9 shrink-0 place-items-center rounded-md bg-canvas text-red-400 transition-colors hover:text-red-500 md:size-12"
+              className="grid size-9 shrink-0 place-items-center rounded-tile text-muted transition-colors hover:text-red-500"
             >
-              <X className="size-5 md:size-8" strokeWidth={2.5} />
+              <X className="size-5" strokeWidth={2.5} />
             </button>
           )}
         </form>
@@ -104,7 +104,7 @@ export default function SearchBar({
                   <button
                     type="button"
                     onMouseDown={() => pick(item)}
-                    className="flex h-14 w-full items-center gap-3 px-5 text-left text-lg text-ink transition-colors hover:bg-canvas md:h-20 md:text-2xl"
+                    className="flex h-14 w-full items-center gap-3 px-5 text-left text-base text-ink transition-colors hover:bg-canvas"
                   >
                     <Icon className="size-5 shrink-0 text-muted md:size-7" strokeWidth={2.5} />
                     {item.label}
@@ -116,9 +116,13 @@ export default function SearchBar({
         )}
       </div>
 
-      <button type="button" className={iconBtn} title="Настройки" onClick={onOpenSettings}>
-        <Settings className="size-8 md:size-12" strokeWidth={2.5} />
-      </button>
+      {/* На публичных страницах шестерёнка живёт в шапке, поэтому здесь
+          кнопка появляется только если обработчик передали (админ-панель). */}
+      {onOpenSettings && (
+        <button type="button" className={iconBtn} title="Настройки" onClick={onOpenSettings}>
+          <Settings className="size-8 md:size-12" strokeWidth={2.5} />
+        </button>
+      )}
     </header>
   )
 }

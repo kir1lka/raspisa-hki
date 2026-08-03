@@ -67,7 +67,7 @@ export default function CalendarModal({ open, onClose, monday, onSelect }) {
                 type="button"
                 onClick={() => setPicked(d)}
                 className={
-                  'grid size-9 place-items-center rounded-full text-sm transition ' +
+                  'grid size-9 place-items-center rounded-[11px] text-sm transition ' +
                   (sel ? 'bg-brand font-semibold text-white ' : 'hover:bg-canvas ') +
                   (!sel && other ? 'text-muted/40' : !sel ? 'text-ink' : '')
                 }

@@ -7,7 +7,9 @@ import { enablePush, getPushState } from '../../push'
 import { getDefaultSelection, setDefaultSelection } from '../../defaultSelection'
 import { shortName } from '../../utils'
 
-export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoom, onZoomChange, groups = [], teachers = [] }) {
+// showTheme: на публичных страницах тема переключается кнопкой в шапке,
+// и дублировать её здесь незачем. В админ-панели шапки нет — там строка нужна.
+export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoom, onZoomChange, groups = [], teachers = [], showTheme = true }) {
   const navigate = useNavigate()
   useBodyScrollLock(open)
 
@@ -108,30 +110,32 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
           </button>
         </div>
 
-        <div className="flex items-center justify-between rounded-card border-2 border-line bg-canvas px-4 py-4">
-          <span className="flex items-center gap-3 text-base text-ink">
-            <Moon className="size-5 text-muted" /> Тёмная тема
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={dark}
-            onClick={onToggleTheme}
-            className={
-              'relative h-7 w-12 shrink-0 rounded-full transition-colors ' +
-              (dark ? 'bg-brand' : 'bg-line')
-            }
-          >
-            <span
+        {showTheme && (
+          <div className="mb-3 flex items-center justify-between rounded-card border-2 border-line bg-canvas px-4 py-4">
+            <span className="flex items-center gap-3 text-base text-ink">
+              <Moon className="size-5 text-muted" /> Тёмная тема
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={dark}
+              onClick={onToggleTheme}
               className={
-                'absolute top-1 size-5 rounded-full bg-white transition-all ' +
-                (dark ? 'left-6' : 'left-1')
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors ' +
+                (dark ? 'bg-brand' : 'bg-line')
               }
-            />
-          </button>
-        </div>
+            >
+              <span
+                className={
+                  'absolute top-1 size-5 rounded-full bg-white transition-all ' +
+                  (dark ? 'left-6' : 'left-1')
+                }
+              />
+            </button>
+          </div>
+        )}
 
-        <div className="mt-3 rounded-card border-2 border-line bg-canvas px-4 py-4">
+        <div className="rounded-card border-2 border-line bg-canvas px-4 py-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="flex items-center gap-3 text-base text-ink">
               <Scaling className="size-5 text-muted" /> Масштаб

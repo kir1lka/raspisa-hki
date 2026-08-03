@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { CalendarDays, Building2, PartyPopper, ChevronDown } from 'lucide-react'
-import Logo from '../../components/Logo/Logo'
 import SearchBar from '../../components/SearchBar/SearchBar'
 import SettingsModal from '../../components/SettingsModal/SettingsModal'
 import AccountModal from '../../components/AccountModal/AccountModal'
@@ -55,11 +54,7 @@ export default function DashboardPage() {
     <ToastProvider>
     <div className="flex min-h-[100dvh] flex-col">
 
-      <div className="pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex max-w-[1140px] justify-center px-3 pt-4 pb-4 md:px-6 md:pt-6 md:pb-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
-          <Logo to="/dashboard" />
-        </div>
-      </div>
+      <div className="pt-[calc(env(safe-area-inset-top)+1rem)]" />
 
       <div>
         <div className="mx-auto max-w-[1140px] px-3 pb-3 md:px-6 md:pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">

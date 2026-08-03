@@ -7,6 +7,21 @@ export const DAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'
 
 export const hhmm = (t) => t.slice(0, 5)
 
+export const MONTHS_SHORT_LOWER = [
+  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+]
+
+/** «1 занятие», «3 занятия», «5 занятий» — русские окончания по числу. */
+export function lessonsWord(n) {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  if (mod100 >= 11 && mod100 <= 14) return `${n} занятий`
+  if (mod10 === 1) return `${n} занятие`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} занятия`
+  return `${n} занятий`
+}
+
 export function shortName(full) {
   if (!full) return ''
   const parts = full.trim().split(/\s+/)

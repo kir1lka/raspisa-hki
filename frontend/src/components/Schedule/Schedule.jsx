@@ -11,10 +11,12 @@ export default function Schedule({ lessons, monday, byTeacher = false, onOpenStu
 
     const dayLessons = lessons.filter((l) => l.dayOfWeek === day && (!l.date || l.date === iso))
     return { day, date, status: dayStatus(date, holidays), dayLessons }
-  }).filter((d) => d.status.type !== 'school' || d.dayLessons.length > 0)
+  })
 
+  // Показываем всю неделю целиком, включая пустые дни: у каждого дня есть
+  // счётчик, и по нему сразу видно, где занятий нет, а где каникулы.
   return (
-    <div className="flex flex-col gap-6 md:gap-10">
+    <div className="flex flex-col gap-11">
       {days.map(({ day, date, status, dayLessons }) => (
         <DaySection
           key={day}

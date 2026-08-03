@@ -303,7 +303,9 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   return (
     <>
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 transition-opacity duration-300 sm:items-center sm:p-4"
+      /* z-60: нижняя панель навигации лежит на z-50 и перекрывала низ листа —
+         подпись «Фото студии» уходила под её размытие. */
+      className="fixed inset-0 z-60 flex items-end justify-center bg-black/50 transition-opacity duration-300 sm:items-center sm:p-4"
       style={{ opacity: shown ? 1 : 0 }}
       onClick={close}
     >
@@ -400,7 +402,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
           })()
         ) : isDesktop ? (
 
-          <div className="flex-1 overflow-x-hidden overflow-y-auto px-6 pt-4 pb-8">
+          <div className="flex-1 overflow-x-hidden overflow-y-auto px-6 pt-4 pb-12">
             <div className="flex items-stretch gap-4">
               <div className={isEvent ? 'w-full min-w-0' : 'flex-[7] min-w-0'}>{sliderPhoto}</div>
               {!isEvent && <div className="flex-[3] min-w-0 flex flex-col">{teacherPhoto}</div>}
@@ -415,7 +417,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
 
           <div
             ref={scrollRef}
-            className="flex-1 overflow-x-hidden overflow-y-auto px-6 pt-4 pb-20"
+            className="flex-1 overflow-x-hidden overflow-y-auto px-6 pt-4 pb-28"
             onTouchStart={onContentTouchStart}
             onTouchMove={onContentTouchMove}
             onTouchEnd={onTouchEnd}
