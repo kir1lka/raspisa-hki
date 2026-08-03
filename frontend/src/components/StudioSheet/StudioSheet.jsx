@@ -250,7 +250,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
       </div>
   )
   const sliderCaption = (
-    <p className="mt-3 text-center text-base text-muted sm:text-xl">{isEvent ? 'Фото мероприятия' : 'Фото студии'}</p>
+    <p className="mt-3 text-center text-sm text-muted">{isEvent ? 'Фото мероприятия' : 'Фото студии'}</p>
   )
   const sliderBlock = (
     <>
@@ -273,8 +273,8 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   )
   const teacherCaption = (
     <>
-      <p className="mt-3 text-center text-lg font-medium text-ink sm:text-2xl">{lesson.teacherName}</p>
-      <p className="text-center text-base text-muted sm:text-xl">Преподаватель студии</p>
+      <p className="mt-3 text-center text-[17px] leading-snug font-bold text-ink">{lesson.teacherName}</p>
+      <p className="text-center text-sm text-muted">Преподаватель студии</p>
     </>
   )
   const teacherBlock = (
@@ -286,14 +286,14 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
 
   const descriptionBlock = (
     <>
-      <h3 className="text-xl font-semibold text-ink sm:text-3xl">{isEvent ? 'Мероприятие' : 'Описание'}</h3>
+      <h3 className="text-lg font-bold text-ink sm:text-xl">{isEvent ? 'Мероприятие' : 'Описание'}</h3>
       {(isEvent ? lesson?.description : studio?.description) ? (
         <RichText
           value={isEvent ? lesson.description : studio.description}
-          className="mt-2 text-lg leading-relaxed text-ink/80 sm:text-2xl"
+          className="mt-2 text-[15px] leading-relaxed text-ink/80"
         />
       ) : (
-        <p className="mt-2 text-lg leading-relaxed text-ink/80 sm:text-2xl">
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/80">
           {isEvent ? 'Описание появится позже.' : 'Описание студии появится позже.'}
         </p>
       )}

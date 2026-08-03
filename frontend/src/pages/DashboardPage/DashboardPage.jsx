@@ -56,6 +56,7 @@ export default function DashboardPage() {
     <div className="flex min-h-[100dvh] flex-col">
 
       <AppHeader
+        wide
         title="Панель управления"
         to="/"
         theme={theme}
@@ -133,7 +134,20 @@ function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, children }
         <span className="flex-1">{title}</span>
         <ChevronDown className={'size-8 shrink-0 text-muted transition-transform ' + (collapsed ? '-rotate-90' : '')} />
       </button>
-      <div className={collapsed ? 'hidden' : ''}>{children}</div>
+      {/* Только подложка: ячейки таблиц прозрачные, и сквозь них просвечивали
+          живые обои. Ширину содержимого не трогаем — w-fit min-w-full тянет
+          фон до ширины таблицы, даже если она шире контейнера. */}
+      <div
+        className={
+          collapsed
+            ? 'hidden'
+            // ml-[50%] + сдвиг на половину своей ширины: mx-auto не центрирует
+            // блок, который шире родителя, и таблица уезжала вправо
+            : 'ml-[50%] w-max min-w-full -translate-x-1/2 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface p-3 md:p-4'
+        }
+      >
+        {children}
+      </div>
     </section>
   )
 }

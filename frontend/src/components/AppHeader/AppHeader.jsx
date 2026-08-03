@@ -9,7 +9,9 @@ import { Moon, Sun, Settings } from 'lucide-react'
  * Подложка под карточкой размыта и растворяется книзу, поэтому содержимое
  * проезжает под шапкой без резкой границы.
  */
-export default function AppHeader({ title = 'Расписание', to = '/login', theme, onToggleTheme, onOpenSettings }) {
+// wide — для админ-панели: там содержимое шире (таблицы), и шапка
+// должна тянуться по ним, иначе поиск заметно длиннее её.
+export default function AppHeader({ title = 'Расписание', to = '/login', theme, onToggleTheme, onOpenSettings, wide = false }) {
   const ref = useRef(null)
 
   // Высоту шапки замеряем и кладём в CSS-переменную: под неё прилипают
@@ -39,7 +41,7 @@ export default function AppHeader({ title = 'Расписание', to = '/login
           отступами. Раньше отступы были на внешнем блоке, и карточка шапки
           выходила шире расписания на ширину этих отступов. */}
       <div className="relative pt-3 pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
-        <div className="mx-auto max-w-[772px] px-3 md:px-6">
+        <div className={'mx-auto px-3 md:px-6 ' + (wide ? 'max-w-[1140px]' : 'max-w-[772px]')}>
           <div className="flex items-center gap-3 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface px-3.5 py-2.5">
           <Link
             to={to}

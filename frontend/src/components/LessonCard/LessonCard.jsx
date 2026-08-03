@@ -86,9 +86,10 @@ export default function LessonCard({ lesson, index = 0, byTeacher = false, highl
       <div className="w-0.5 shrink-0 self-stretch rounded-full bg-line" />
 
       <div className="flex min-w-0 flex-col justify-center gap-1">
-        <h3 className="flex items-center gap-2 text-[18px] leading-tight font-bold tracking-tight text-ink">
-          {/* Символ, а не иконка из набора — так живее, как в макете */}
-          {lesson.special && <span className="shrink-0 text-[1.2em] leading-none text-brand">✦</span>}
+        {/* Звёздочка внутри строки, а не отдельным flex-элементом: длинное
+            название переносится под неё, а не с отступом вправо */}
+        <h3 className="text-[18px] leading-snug font-bold tracking-tight text-ink">
+          {lesson.special && <span className="mr-1.5 text-[1.15em] text-brand">✦</span>}
           {title}
         </h3>
         <p className="text-sm text-muted">{subtitle}</p>

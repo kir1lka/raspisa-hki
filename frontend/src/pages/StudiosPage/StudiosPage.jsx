@@ -6,32 +6,38 @@ import SettingsModal from '../../components/SettingsModal/SettingsModal'
 import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import SiteFooter from '../../components/SiteFooter/SiteFooter'
 import { fetchStudios } from '../../api'
+import { getCached, loadCached } from '../../cache'
 import { useUiSettings } from '../../useUiSettings'
 import { useSwipeTabs } from '../../useSwipeTabs'
 
-export default function StudiosPage() {
+// embedded — страница показана внутри общего каркаса MainTabs:
+// шапку, подвал и нижнюю панель рисует он, здесь остаётся только содержимое.
+export default function StudiosPage({ embedded = false }) {
   const { theme, toggleTheme, zoom, setZoom } = useUiSettings()
   useSwipeTabs('/studios')
-  const [studios, setStudios] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Если студии уже загружали в этой сессии — показываем сразу, без скелетона
+  const [studios, setStudios] = useState(() => getCached('studios') ?? [])
+  const [loading, setLoading] = useState(() => !getCached('studios'))
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [openStudio, setOpenStudio] = useState(null)
 
   useEffect(() => {
-    fetchStudios()
+    loadCached('studios', fetchStudios)
       .then(setStudios)
       .catch(() => setStudios([]))
       .finally(() => setLoading(false))
   }, [])
 
   return (
-    <div className="flex min-h-[100dvh] flex-col [--ui-base:1]">
-      <AppHeader
-        title="Студии"
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenSettings={() => setSettingsOpen(true)}
-      />
+    <div className={embedded ? 'contents' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
+      {!embedded && (
+        <AppHeader
+          title="Студии"
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+      )}
 
       <main className="flex-1">
         <div className="mx-auto w-full max-w-[772px] px-3 pt-[18px] pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
@@ -76,18 +82,21 @@ export default function StudiosPage() {
         </div>
       </main>
 
-      <SiteFooter />
-      <TabBar active="studios" />
-
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        zoom={zoom}
-        onZoomChange={setZoom}
-        showTheme={false}
-      />
+      {!embedded && (
+        <>
+          <SiteFooter />
+          <TabBar active="studios" />
+          <SettingsModal
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            showTheme={false}
+          />
+        </>
+      )}
 
       {/* Лист студии переиспользуем как есть: он ищет студию по коду,
           поэтому подсовываем ему «занятие» с нужным кодом. */}

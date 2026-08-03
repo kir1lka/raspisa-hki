@@ -13,11 +13,13 @@ import CalendarModal from '../../components/CalendarModal/CalendarModal'
 import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import { fetchGroupLessons, fetchTeacherLessons, fetchGroups, fetchTeachers, fetchHolidays, fetchStudios } from '../../api'
 import { setLastSelection } from '../../defaultSelection'
+import { getCached, setCache } from '../../cache'
 import { useSwipeTabs } from '../../useSwipeTabs'
 import { DAY_ORDER } from '../../utils'
 import { mondayOf, addDays, sameDay, defaultWeekStart } from '../../dates'
 
-export default function SchedulePage({ base = '' }) {
+// embedded — страница внутри общего каркаса MainTabs: обвязку рисует он.
+export default function SchedulePage({ base = '', embedded = false }) {
   const { number, teacherId } = useParams()
   const navigate = useNavigate()
   // location.key меняется при КАЖДОМ переходе, даже если адрес тот же самый.
@@ -77,12 +79,25 @@ export default function SchedulePage({ base = '' }) {
       setLessons([])
       return
     }
-    const request = number ? fetchGroupLessons(number) : fetchTeacherLessons(teacherId)
-    setLoading(true)
+    // Если это расписание уже открывали — показываем его сразу из памяти
+    // и обновляем в фоне. Иначе при каждом возврате на вкладку мигал скелетон.
+    const key = number ? `lessons:g:${number}` : `lessons:t:${teacherId}`
+    const cached = getCached(key)
+    if (cached) {
+      setLessons(cached)
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
     setError(null)
+
+    const request = number ? fetchGroupLessons(number) : fetchTeacherLessons(teacherId)
     request
-      .then(setLessons)
-      .catch((e) => { setError(e.message); setLessons([]) })
+      .then((data) => {
+        setCache(key, data)
+        setLessons(data)
+      })
+      .catch((e) => { if (!cached) { setError(e.message); setLessons([]) } })
       .finally(() => setLoading(false))
   }, [number, teacherId, selection, navKey])
 
@@ -128,15 +143,17 @@ export default function SchedulePage({ base = '' }) {
     /* --ui-base:1 — на публичных страницах интерфейс в натуральную величину,
        как в макете. Глобально его менять нельзя: тем же множителем ужимается
        админ-панель, а её мы не трогаем. */
-    <div className="flex min-h-[100dvh] flex-col [--ui-base:1]">
+    <div className={embedded ? 'contents' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
 
-      <AppHeader
-        title="Расписание"
-        to={base ? '/dashboard' : '/login'}
-        theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-        onOpenSettings={() => setSettingsOpen(true)}
-      />
+      {!embedded && (
+        <AppHeader
+          title="Расписание"
+          to={base ? '/dashboard' : '/login'}
+          theme={theme}
+          onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+      )}
 
       <div>
         {/* pt-[18px] и pb-11 добиваются отступов из макета: 34px до поиска
@@ -200,13 +217,12 @@ export default function SchedulePage({ base = '' }) {
         )}
       </main>
 
-      <SiteFooter />
-
-      <ScrollTopButton />
+      {!embedded && <SiteFooter />}
+      {!embedded && <ScrollTopButton />}
 
       {/* В админ-панели нижняя навигация не нужна: она появляется только
           когда открыто расписание найденной группы или преподавателя. */}
-      {(!base || selection) && <TabBar active="schedule" />}
+      {!embedded && (!base || selection) && <TabBar active="schedule" />}
 
       <SettingsModal
         open={settingsOpen}
