@@ -22,3 +22,25 @@ export function defaultSelectionPath(sel, base = '') {
   if (!sel) return null
   return sel.type === 'teacher' ? `${base}/teacher/${sel.value}` : `${base}/group/${sel.value}`
 }
+
+// Последнее открытое расписание. Нужно, чтобы после ухода на «Студии»
+// или «События» возврат на вкладку «Расписание» не начинался с пустого поиска.
+const LAST_KEY = 'last-selection'
+
+export function getLastSelection() {
+  try {
+    const raw = localStorage.getItem(LAST_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function setLastSelection(sel) {
+  try {
+    if (sel) localStorage.setItem(LAST_KEY, JSON.stringify(sel))
+    else localStorage.removeItem(LAST_KEY)
+  } catch {
+    // приватный режим — просто не запомним
+  }
+}

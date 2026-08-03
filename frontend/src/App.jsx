@@ -7,8 +7,9 @@ import AuthPage from './pages/AuthPage/AuthPage'
 import DashboardPage from './pages/DashboardPage/DashboardPage'
 import WelcomeModal from './components/WelcomeModal/WelcomeModal'
 import Particles from './components/Particles/Particles'
+import WarmBackdrop from './components/WarmBackdrop/WarmBackdrop'
 import { getUser } from './auth'
-import { getDefaultSelection, defaultSelectionPath } from './defaultSelection'
+import { getDefaultSelection, defaultSelectionPath, getLastSelection } from './defaultSelection'
 
 const WELCOME_KEY = 'welcome-seen-v1'
 
@@ -23,7 +24,9 @@ function GuestOnly({ children }) {
 // Стартовый экран: если задан выбор по умолчанию — сразу открываем его расписание,
 // иначе обычный поиск.
 function Home() {
-  const path = defaultSelectionPath(getDefaultSelection())
+  // Сначала выбор «открывать при входе», иначе — последняя открытая группа
+  // или преподаватель, чтобы возврат на вкладку не сбрасывал поиск.
+  const path = defaultSelectionPath(getDefaultSelection() || getLastSelection())
   return path ? <Navigate to={path} replace /> : <SchedulePage />
 }
 
@@ -40,6 +43,7 @@ export default function App() {
   return (
     <>
     <Particles />
+    <WarmBackdrop />
 
     <Routes>
       {/* Без GuestOnly: иначе вкладка «Расписание» в нижнем меню у вошедшего

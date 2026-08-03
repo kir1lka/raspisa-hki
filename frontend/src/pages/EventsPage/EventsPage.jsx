@@ -6,6 +6,7 @@ import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import SiteFooter from '../../components/SiteFooter/SiteFooter'
 import { fetchAllLessons, fetchStudios } from '../../api'
 import { useUiSettings } from '../../useUiSettings'
+import { useSwipeTabs } from '../../useSwipeTabs'
 import { hhmm } from '../../utils'
 import { MONTHS_NOM } from '../../dates'
 
@@ -13,6 +14,7 @@ const MONTH_SHORT = MONTHS_NOM.map((m) => m.slice(0, 3).toLowerCase())
 
 export default function EventsPage() {
   const { theme, toggleTheme, zoom, setZoom } = useUiSettings()
+  useSwipeTabs('/events')
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
@@ -42,7 +44,7 @@ export default function EventsPage() {
       />
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[772px] px-3 pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+        <div className="mx-auto w-full max-w-[772px] px-3 pt-[18px] pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
           {loading ? (
             <div className="flex animate-pulse flex-col gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -64,13 +66,14 @@ export default function EventsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {events.map((e) => {
+              {events.map((e, i) => {
                 const d = new Date(e.date)
                 return (
                   <article
                     key={e.id}
+                    style={{ animationDelay: `${i * 60}ms` }}
                     onClick={() => setOpenEvent(e)}
-                    className="flex cursor-pointer items-stretch gap-4 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-transparent px-4 py-4 transition select-none hover:-translate-y-0.5 [background:linear-gradient(var(--color-surface),var(--color-surface))_padding-box,linear-gradient(135deg,var(--color-brand-ring),var(--color-brand))_border-box]"
+                    className="flex animate-fade-up cursor-pointer items-stretch gap-4 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-transparent px-4 py-4 transition select-none hover:-translate-y-0.5 [background:linear-gradient(var(--color-surface),var(--color-surface))_padding-box,linear-gradient(135deg,var(--color-brand-ring),var(--color-brand))_border-box]"
                   >
                     <div className="flex w-[62px] shrink-0 flex-col items-center justify-center rounded-tile border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-canvas py-2 tabular-nums">
                       <b className="text-xl font-extrabold tracking-tight text-ink">{d.getDate()}</b>

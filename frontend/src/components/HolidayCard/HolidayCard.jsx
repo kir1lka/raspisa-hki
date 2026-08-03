@@ -28,7 +28,7 @@ export default function HolidayCard({ label, type, name }) {
       onClick={handleClick}
       onAnimationEnd={() => setActive(false)}
       className={
-        'flex cursor-pointer items-center justify-center gap-2.5 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed px-5 py-5 text-center transition select-none active:scale-[0.99] ' +
+        'flex animate-fade-up cursor-pointer items-center justify-center gap-2.5 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed px-5 py-5 text-center transition select-none active:scale-[0.99] ' +
         (active ? 'animate-border-rainbow' : 'border-line')
       }
     >

@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useIsDark } from '../../useIsDark'
+import { useBgEffects } from '../../useBgEffects'
 
 const COUNT = 70
 const SPEED = 0.06 // пикселей за кадр — намеренно очень медленно
@@ -6,25 +8,19 @@ const LINK_DIST = 130
 
 /**
  * Медленно плывущие частицы с линиями между близкими соседями.
- * Работает только в тёмной теме: на светлом фоне сетка выглядит грязно.
+ * Работают в обеих темах, цвет берётся из акцента: синий в тёмной,
+ * оранжевый в светлой.
  *
  * Канвас лежит под содержимым и не ловит клики. При prefers-reduced-motion
  * и на вкладке в фоне анимация не крутится.
  */
 export default function Particles() {
   const canvasRef = useRef(null)
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-
-  // Тема хранится классом на <html>, поэтому следим за ним, а не за пропсом:
-  // так компонент не зависит от того, на какой странице его подключили.
-  useEffect(() => {
-    const obs = new MutationObserver(() => setDark(document.documentElement.classList.contains('dark')))
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    return () => obs.disconnect()
-  }, [])
+  const dark = useIsDark()
+  const enabled = useBgEffects()
 
   useEffect(() => {
-    if (!dark) return
+    if (!enabled) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const canvas = canvasRef.current
@@ -75,7 +71,9 @@ export default function Particles() {
           const dy = dots[i].y - dots[j].y
           const dist = Math.hypot(dx, dy)
           if (dist > LINK_DIST) continue
-          ctx.globalAlpha = (1 - dist / LINK_DIST) * 0.16
+          // На светлом фоне оранжевый читается слабее синего на тёмном,
+          // поэтому там линии и точки чуть плотнее.
+          ctx.globalAlpha = (1 - dist / LINK_DIST) * (dark ? 0.16 : 0.26)
           ctx.beginPath()
           ctx.moveTo(dots[i].x, dots[i].y)
           ctx.lineTo(dots[j].x, dots[j].y)
@@ -84,7 +82,7 @@ export default function Particles() {
       }
 
       ctx.fillStyle = color
-      ctx.globalAlpha = 0.4
+      ctx.globalAlpha = dark ? 0.4 : 0.55
       for (const d of dots) {
         ctx.beginPath()
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
@@ -109,17 +107,23 @@ export default function Particles() {
     resize()
     seed()
     start()
+    // ResizeObserver, а не только событие окна: на скрытой вкладке размер
+    // канваса на момент запуска может быть нулевым, и без наблюдателя
+    // он таким и останется, пока окно не поменяет размер.
+    const ro = new ResizeObserver(onResize)
+    ro.observe(canvas)
     window.addEventListener('resize', onResize)
     document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       stop()
+      ro.disconnect()
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [dark])
+  }, [dark, enabled])
 
-  if (!dark) return null
+  if (!enabled) return null
 
   return (
     <canvas

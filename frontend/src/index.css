@@ -158,7 +158,7 @@
     background: var(--color-brand);
     top: -220px;
     left: -140px;
-    opacity: 0.1;
+    opacity: 0.2;
   }
   body::after {
     width: 460px;
@@ -166,7 +166,7 @@
     background: var(--color-brand-ring);
     bottom: -240px;
     right: -120px;
-    opacity: 0.08;
+    opacity: 0.16;
   }
   .dark body::before { opacity: 0.28; }
   .dark body::after { opacity: 0.18; }
@@ -233,6 +233,28 @@
   -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
 }
+/* Плавающие шары на фоне светлой темы. Сам элемент прозрачный —
+   видно только его размытую тень, которая ходит по кругу вокруг
+   смещённого центра вращения. */
+@keyframes ball-move {
+  to {
+    transform: translate3d(0, 0, 1px) rotate(360deg);
+  }
+}
+.ball {
+  position: absolute;
+  width: 32vmin;
+  height: 32vmin;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  animation-name: ball-move;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ball { animation: none; }
+}
+
 .fade-layer-bottom {
   bottom: 0;
   height: 140px;

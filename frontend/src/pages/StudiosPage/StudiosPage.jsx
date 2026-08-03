@@ -7,9 +7,11 @@ import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import SiteFooter from '../../components/SiteFooter/SiteFooter'
 import { fetchStudios } from '../../api'
 import { useUiSettings } from '../../useUiSettings'
+import { useSwipeTabs } from '../../useSwipeTabs'
 
 export default function StudiosPage() {
   const { theme, toggleTheme, zoom, setZoom } = useUiSettings()
+  useSwipeTabs('/studios')
   const [studios, setStudios] = useState([])
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -32,7 +34,7 @@ export default function StudiosPage() {
       />
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[772px] px-3 pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+        <div className="mx-auto w-full max-w-[772px] px-3 pt-[18px] pb-10 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
             {loading &&
               Array.from({ length: 6 }).map((_, i) => (
@@ -48,11 +50,12 @@ export default function StudiosPage() {
                 </div>
               ))}
 
-            {!loading && studios.map((s) => (
+            {!loading && studios.map((s, i) => (
               <article
                 key={s.id}
+                style={{ animationDelay: `${i * 60}ms` }}
                 onClick={() => setOpenStudio(s)}
-                className="cursor-pointer overflow-hidden rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface transition select-none hover:-translate-y-0.5 hover:border-brand"
+                className="animate-fade-up cursor-pointer overflow-hidden rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface transition select-none hover:-translate-y-0.5 hover:border-brand"
               >
                 {/* relative + absolute: у растянутого grid-элемента картинка
                     задавала высоту сама и карточка вырастала под её размер. */}

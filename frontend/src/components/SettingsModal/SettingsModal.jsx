@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Bell, BellOff, BellRing, Info, Trash2, Moon, Scaling, CircleUserRound, LogOut, LoaderCircle, Star, Users, User } from 'lucide-react'
+import { X, Bell, BellOff, BellRing, Info, Trash2, Moon, Scaling, CircleUserRound, LogOut, LoaderCircle, Star, Users, User, Sparkles } from 'lucide-react'
+import { getBgEffects, setBgEffects } from '../../useBgEffects'
 import { getUser, clearUser } from '../../auth'
 import { useBodyScrollLock } from '../../useBodyScrollLock'
 import { enablePush, getPushState } from '../../push'
@@ -17,6 +18,7 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
   const [pushBusy, setPushBusy] = useState(false)
   const [pushError, setPushError] = useState(null)
 
+  const [bgOn, setBgOn] = useState(getBgEffects)
   const [defaultSel, setDefaultSel] = useState(() => getDefaultSelection())
   const [pickQuery, setPickQuery] = useState('')
   const [pickOpen, setPickOpen] = useState(false)
@@ -26,6 +28,7 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
     setPushError(null)
     getPushState().then(setPushState).catch(() => setPushState('unsupported'))
     setDefaultSel(getDefaultSelection())
+    setBgOn(getBgEffects())
     setPickQuery('')
     setPickOpen(false)
   }, [open])
@@ -134,6 +137,30 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
             </button>
           </div>
         )}
+
+        <div className="mb-3 flex items-center justify-between rounded-card border-2 border-line bg-canvas px-4 py-4">
+          <span className="flex items-center gap-3 text-base text-ink">
+            <Sparkles className="size-5 text-muted" /> Живые обои
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={bgOn}
+            onClick={() => {
+              setBgEffects(!bgOn)
+              setBgOn(!bgOn)
+            }}
+            className={
+              'relative h-7 w-12 shrink-0 rounded-full transition-colors ' + (bgOn ? 'bg-brand' : 'bg-line')
+            }
+          >
+            <span
+              className={
+                'absolute top-1 size-5 rounded-full bg-white transition-all ' + (bgOn ? 'left-6' : 'left-1')
+              }
+            />
+          </button>
+        </div>
 
         <div className="rounded-card border-2 border-line bg-canvas px-4 py-4">
           <div className="mb-3 flex items-center justify-between">

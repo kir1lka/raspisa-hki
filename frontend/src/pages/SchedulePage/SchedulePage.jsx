@@ -12,6 +12,8 @@ import SiteFooter from '../../components/SiteFooter/SiteFooter'
 import CalendarModal from '../../components/CalendarModal/CalendarModal'
 import StudioSheet from '../../components/StudioSheet/StudioSheet'
 import { fetchGroupLessons, fetchTeacherLessons, fetchGroups, fetchTeachers, fetchHolidays, fetchStudios } from '../../api'
+import { setLastSelection } from '../../defaultSelection'
+import { useSwipeTabs } from '../../useSwipeTabs'
 import { DAY_ORDER } from '../../utils'
 import { mondayOf, addDays, sameDay, defaultWeekStart } from '../../dates'
 
@@ -23,6 +25,9 @@ export default function SchedulePage({ base = '' }) {
   // number/teacherId в этом случае не меняются, и эффекты сами бы не сработали.
   const { key: navKey } = useLocation()
   const selection = number || teacherId
+
+  // Свайп между вкладками — только на публичных страницах, в админке лишний
+  useSwipeTabs(base ? null : '/')
 
   const [query, setQuery] = useState('')
   const [lessons, setLessons] = useState([])
@@ -84,6 +89,14 @@ export default function SchedulePage({ base = '' }) {
   useEffect(() => {
     setMonday((m) => (sameDay(m, defaultWeekStart()) ? m : defaultWeekStart()))
   }, [number, teacherId])
+
+  // Запоминаем открытое расписание: возврат с «Студий» или «Событий»
+  // на вкладку «Расписание» откроет его снова, а не пустой поиск.
+  useEffect(() => {
+    if (base) return
+    if (number) setLastSelection({ type: 'group', value: number })
+    else if (teacherId) setLastSelection({ type: 'teacher', value: teacherId })
+  }, [number, teacherId, base])
 
   useEffect(() => {
     if (!lessons.length) return

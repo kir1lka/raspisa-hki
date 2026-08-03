@@ -1,27 +1,42 @@
+// Размеры повторяют настоящие LessonCard и плашку дня: раньше заглушка была
+// заметно выше карточек, и при загрузке содержимое дёргалось.
 function SkeletonCard() {
   return (
-    <div className="flex min-h-[120px] overflow-hidden rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface md:min-h-[160px]">
-      <div className="flex w-20 shrink-0 flex-col items-center justify-between py-5 md:w-28 md:py-7">
-        <div className="h-4 w-12 rounded bg-line/70" />
-        <div className="h-8 w-6 rounded bg-line/70" />
-        <div className="h-4 w-12 rounded bg-line/70" />
+    <div className="flex items-stretch gap-4 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface px-5 py-4">
+      <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-1">
+        <div className="h-4 w-11 rounded bg-line/70" />
+        <div className="my-1 size-7 rounded-[9px] bg-line/70" />
+        <div className="h-3.5 w-11 rounded bg-line/60" />
       </div>
-      <div className="my-auto h-[80%] w-1 shrink-0 rounded-card bg-sep" />
-      <div className="flex flex-1 flex-col justify-center gap-3 px-5 py-5 md:px-7">
-        <div className="h-6 w-3/4 rounded bg-line/70 md:h-8" />
-        <div className="h-4 w-1/2 rounded bg-line/60 md:h-5" />
+      <div className="w-0.5 shrink-0 self-stretch rounded-full bg-line" />
+      <div className="flex flex-1 flex-col justify-center gap-2">
+        <div className="h-[18px] w-2/3 rounded bg-line/70" />
+        <div className="h-3.5 w-2/5 rounded bg-line/60" />
       </div>
+    </div>
+  )
+}
+
+function SkeletonDayHead() {
+  return (
+    <div className="mb-3.5 flex items-center gap-3 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-canvas px-3 py-2">
+      <div className="size-11 shrink-0 rounded-tile bg-line/70" />
+      <div className="flex flex-col gap-1.5">
+        <div className="h-[15px] w-24 rounded bg-line/70" />
+        <div className="h-2.5 w-12 rounded bg-line/60" />
+      </div>
+      <div className="ml-auto h-7 w-20 rounded-full bg-line/70" />
     </div>
   )
 }
 
 export default function ScheduleSkeleton() {
   return (
-    <div className="animate-pulse" aria-hidden>
+    <div className="flex animate-pulse flex-col gap-11" aria-hidden>
       {[0, 1].map((section) => (
-        <section key={section} className="mt-4 md:mt-6">
-          <div className="h-12 rounded-card bg-line/70 md:h-14" />
-          <div className="mt-3 flex flex-col gap-3 md:mt-4 md:gap-4">
+        <section key={section}>
+          <SkeletonDayHead />
+          <div className="flex flex-col gap-2.5">
             {[0, 1, 2].map((i) => (
               <SkeletonCard key={i} />
             ))}

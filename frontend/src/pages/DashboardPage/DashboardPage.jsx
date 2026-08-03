@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { CalendarDays, Building2, PartyPopper, ChevronDown } from 'lucide-react'
+import AppHeader from '../../components/AppHeader/AppHeader'
 import SearchBar from '../../components/SearchBar/SearchBar'
 import SettingsModal from '../../components/SettingsModal/SettingsModal'
 import AccountModal from '../../components/AccountModal/AccountModal'
@@ -54,7 +55,13 @@ export default function DashboardPage() {
     <ToastProvider>
     <div className="flex min-h-[100dvh] flex-col">
 
-      <div className="pt-[calc(env(safe-area-inset-top)+1rem)]" />
+      <AppHeader
+        title="Панель управления"
+        to="/"
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
       <div>
         <div className="mx-auto max-w-[1140px] px-3 pb-3 md:px-6 md:pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
@@ -65,7 +72,6 @@ export default function DashboardPage() {
             teachers={teachers}
             onSelectGroup={(n) => navigate(`/dashboard/group/${n}`)}
             onSelectTeacher={(id) => navigate(`/dashboard/teacher/${id}`)}
-            onOpenSettings={() => setSettingsOpen(true)}
           />
         </div>
       </div>
