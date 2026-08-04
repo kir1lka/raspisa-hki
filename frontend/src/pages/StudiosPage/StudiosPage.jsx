@@ -29,7 +29,9 @@ export default function StudiosPage({ embedded = false }) {
   }, [])
 
   return (
-    <div className={embedded ? 'contents' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
+    /* Внутри карусели корень должен быть обычным блоком: с display:contents
+       он выпадает из разметки, и слайдер меряет слайды неверно. */
+    <div className={embedded ? 'w-full' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
       {!embedded && (
         <AppHeader
           title="Студии"

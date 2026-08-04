@@ -141,7 +141,7 @@ function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, children }
         className={
           collapsed
             ? 'hidden'
-            // ml-[50%] + сдвиг на половину своей ширины: mx-auto не центрирует
+            // ml-[50%] + сдвиг на половину своей ширины:  не центрирует
             // блок, который шире родителя, и таблица уезжала вправо
             : 'ml-[50%] w-max min-w-full -translate-x-1/2 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface p-3 md:p-4'
         }

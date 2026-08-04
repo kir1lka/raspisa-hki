@@ -38,7 +38,7 @@ export default function EventsPage({ embedded = false }) {
   }, [])
 
   return (
-    <div className={embedded ? 'contents' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
+    <div className={embedded ? 'w-full' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
       {!embedded && (
         <AppHeader
           title="События"

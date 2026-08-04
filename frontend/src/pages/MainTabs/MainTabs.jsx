@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import 'swiper/css'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import useEmblaCarousel from 'embla-carousel-react'
 import AppHeader from '../../components/AppHeader/AppHeader'
 import TabBar from '../../components/TabBar/TabBar'
 import SiteFooter from '../../components/SiteFooter/SiteFooter'
@@ -23,51 +22,99 @@ const tabForPath = (p) => (p.startsWith('/studios') ? 1 : p.startsWith('/events'
 /**
  * Общий каркас трёх публичных вкладок.
  *
- * Страницы держатся в DOM одновременно и лежат в Swiper, поэтому переключение —
- * настоящее перелистывание пальцем, без перезагрузки и повторных запросов.
+ * Страницы держатся в DOM одновременно и лежат в горизонтальной карусели:
+ * переключение — перелистывание, без перезагрузки и повторных запросов.
  * Шапка, подвал, нижняя панель и настройки живут здесь, иначе их было бы по три.
  *
- * autoHeight подгоняет высоту под активный слайд. Прошлая попытка на Embla
- * схлопывала неактивные слайды вручную, и от этого ломались его замеры —
- * здесь этим занимается сама библиотека.
+ * Высоту задаём самой карусели по активному слайду. Первая попытка схлопывала
+ * неактивные слайды в нулевую высоту — от этого у Embla ломались замеры
+ * и слайд просто не прокручивался.
  */
 export default function MainTabs() {
   const location = useLocation()
   const navigate = useNavigate()
+  const params = useParams()
   const { theme, toggleTheme, zoom, setZoom } = useUiSettings()
 
   const index = tabForPath(location.pathname)
-  const swiperRef = useRef(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [groups, setGroups] = useState([])
   const [teachers, setTeachers] = useState([])
+  const [height, setHeight] = useState(null)
+
+  const slideRefs = useRef([])
+  const dragged = useRef(false)
+
+  const [emblaRef, embla] = useEmblaCarousel({
+    align: 'start',
+    containScroll: 'trimSnaps',
+    duration: 20,
+  })
 
   useEffect(() => {
     loadCached('groups', fetchGroups).then(setGroups).catch(() => setGroups([]))
     loadCached('teachers', fetchTeachers).then(setTeachers).catch(() => setTeachers([]))
   }, [])
 
-  // Адрес → слайд: клик по нижней панели или переход по ссылке
+  // Высота карусели = высота активного слайда. Содержимое приходит асинхронно,
+  // поэтому следим за размером, а не меряем один раз.
   useEffect(() => {
-    const swiper = swiperRef.current
-    if (swiper && swiper.activeIndex !== index) swiper.slideTo(index)
+    const el = slideRefs.current[index]
+    if (!el) return
+    const apply = () => setHeight(el.offsetHeight)
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [index])
 
-  // Адрес меняем только после жеста пальцем. При монтировании Swiper сам
-  // сообщает о смене слайда, и без этой проверки клик по вкладке тут же
-  // откатывался обратно на расписание.
-  const swiped = useRef(false)
+  // Адрес меняем только после жеста пальцем: при инициализации карусель сама
+  // сообщает о выборе слайда, и без этой проверки клик по вкладке откатывался.
+  useEffect(() => {
+    if (!embla) return
 
-  const handleTransitionEnd = (swiper) => {
-    if (!swiped.current) return
-    swiped.current = false
-    const i = swiper.activeIndex
-    if (i === tabForPath(window.location.pathname)) return
-    if (i === 1) navigate('/studios')
-    else if (i === 2) navigate('/events')
-    else navigate(defaultSelectionPath(getLastSelection()) || '/')
+    const onPointerDown = () => { dragged.current = true }
+    const onSettle = () => {
+      if (!dragged.current) return
+      dragged.current = false
+      const i = embla.selectedScrollSnap()
+      if (i === tabForPath(window.location.pathname)) return
+      if (i === 1) navigate('/studios')
+      else if (i === 2) navigate('/events')
+      else navigate(defaultSelectionPath(getLastSelection()) || '/')
+      window.scrollTo({ top: 0 })
+    }
+
+    embla.on('pointerDown', onPointerDown)
+    embla.on('settle', onSettle)
+    return () => {
+      embla.off('pointerDown', onPointerDown)
+      embla.off('settle', onSettle)
+    }
+  }, [embla, navigate])
+
+  // Адрес → слайд: клик по нижней панели или переход по ссылке
+  useEffect(() => {
+    if (!embla) return
+    if (embla.selectedScrollSnap() !== index) embla.scrollTo(index)
     window.scrollTo({ top: 0 })
-  }
+  }, [embla, index])
+
+  // Выбор для расписания: пока мы на его вкладке — из адреса, иначе —
+  // запомненный. Иначе на «Студиях» расписание видит пустые параметры
+  // маршрута и показывает подсказку «введите номер группы».
+  const routeSel = params.number
+    ? { type: 'group', value: params.number }
+    : params.teacherId
+      ? { type: 'teacher', value: params.teacherId }
+      : null
+  const scheduleSel = routeSel || getLastSelection()
+
+  const pages = [
+    <SchedulePage key="schedule" embedded selection={scheduleSel} active={index === 0} />,
+    <StudiosPage key="studios" embedded />,
+    <EventsPage key="events" embedded />,
+  ]
 
   return (
     <div className="flex min-h-[100dvh] flex-col [--ui-base:1]">
@@ -79,26 +126,23 @@ export default function MainTabs() {
       />
 
       <main className="flex flex-1 flex-col">
-        <Swiper
-          autoHeight
-          initialSlide={index}
-          speed={280}
-          resistanceRatio={0.6}
-          threshold={8}
-          onSwiper={(s) => { swiperRef.current = s }}
-          onTouchStart={() => { swiped.current = true }}
-          onSlideChangeTransitionEnd={handleTransitionEnd}
+        <div
+          ref={emblaRef}
+          className="overflow-hidden transition-[height] duration-200 ease-out"
+          style={height ? { height } : undefined}
         >
-          <SwiperSlide>
-            <SchedulePage embedded />
-          </SwiperSlide>
-          <SwiperSlide>
-            <StudiosPage embedded />
-          </SwiperSlide>
-          <SwiperSlide>
-            <EventsPage embedded />
-          </SwiperSlide>
-        </Swiper>
+          <div className="flex">
+            {pages.map((page, i) => (
+              <div
+                key={i}
+                ref={(el) => { slideRefs.current[i] = el }}
+                className="w-full min-w-0 flex-[0_0_100%]"
+              >
+                {page}
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
 
       <SiteFooter />

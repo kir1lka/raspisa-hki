@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import SchedulePage from './pages/SchedulePage/SchedulePage'
-import StudiosPage from './pages/StudiosPage/StudiosPage'
-import EventsPage from './pages/EventsPage/EventsPage'
+import MainTabs from './pages/MainTabs/MainTabs'
 import AuthPage from './pages/AuthPage/AuthPage'
 import DashboardPage from './pages/DashboardPage/DashboardPage'
 import WelcomeModal from './components/WelcomeModal/WelcomeModal'
@@ -27,7 +26,7 @@ function Home() {
   // Сначала выбор «открывать при входе», иначе — последняя открытая группа
   // или преподаватель, чтобы возврат на вкладку не сбрасывал поиск.
   const path = defaultSelectionPath(getDefaultSelection() || getLastSelection())
-  return path ? <Navigate to={path} replace /> : <SchedulePage />
+  return path ? <Navigate to={path} replace /> : <MainTabs />
 }
 
 export default function App() {
@@ -49,10 +48,10 @@ export default function App() {
       {/* Без GuestOnly: иначе вкладка «Расписание» в нижнем меню у вошедшего
           пользователя перекидывала на админ-панель вместо расписания. */}
       <Route path="/" element={<Home />} />
-      <Route path="/group/:number" element={<SchedulePage />} />
-      <Route path="/teacher/:teacherId" element={<SchedulePage />} />
-      <Route path="/studios" element={<StudiosPage />} />
-      <Route path="/events" element={<EventsPage />} />
+      <Route path="/group/:number" element={<MainTabs />} />
+      <Route path="/teacher/:teacherId" element={<MainTabs />} />
+      <Route path="/studios" element={<MainTabs />} />
+      <Route path="/events" element={<MainTabs />} />
       <Route path="/login" element={<GuestOnly><AuthPage /></GuestOnly>} />
       <Route
         path="/dashboard"

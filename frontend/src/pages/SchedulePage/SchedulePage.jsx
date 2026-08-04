@@ -19,8 +19,14 @@ import { DAY_ORDER } from '../../utils'
 import { mondayOf, addDays, sameDay, defaultWeekStart } from '../../dates'
 
 // embedded — страница внутри общего каркаса MainTabs: обвязку рисует он.
-export default function SchedulePage({ base = '', embedded = false }) {
-  const { number, teacherId } = useParams()
+// selection — выбранная группа или преподаватель, переданные снаружи.
+// Внутри карусели адрес общий на три вкладки: уходя на «Студии», параметры
+// маршрута пропадают, и расписание оставалось бы пустым. active — активна ли
+// вкладка сейчас: неактивная не должна дёргать прокрутку страницы.
+export default function SchedulePage({ base = '', embedded = false, selection: selProp = null, active = true }) {
+  const params = useParams()
+  const number = params.number ?? (selProp?.type === 'group' ? String(selProp.value) : undefined)
+  const teacherId = params.teacherId ?? (selProp?.type === 'teacher' ? String(selProp.value) : undefined)
   const navigate = useNavigate()
   // location.key меняется при КАЖДОМ переходе, даже если адрес тот же самый.
   // По нему отличаем повторный выбор той же группы от отсутствия перехода:
@@ -115,6 +121,7 @@ export default function SchedulePage({ base = '', embedded = false }) {
 
   useEffect(() => {
     if (!lessons.length) return
+    if (embedded && !active) return
     const today = new Date()
     const isCurrentWeek = sameDay(monday, mondayOf(today))
     requestAnimationFrame(() => {
@@ -143,7 +150,7 @@ export default function SchedulePage({ base = '', embedded = false }) {
     /* --ui-base:1 — на публичных страницах интерфейс в натуральную величину,
        как в макете. Глобально его менять нельзя: тем же множителем ужимается
        админ-панель, а её мы не трогаем. */
-    <div className={embedded ? 'contents' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
+    <div className={embedded ? 'w-full' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
 
       {!embedded && (
         <AppHeader
