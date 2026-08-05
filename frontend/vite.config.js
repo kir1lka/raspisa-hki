@@ -10,7 +10,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false, // регистрируем SW вручную в main.jsx (с проверкой обновления при возврате)
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       pwaAssets: {
         config: true,
         overrideManifestIcons: true,

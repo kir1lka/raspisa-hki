@@ -132,17 +132,27 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
     scrolledFor.current = key
     const today = new Date()
     const isCurrentWeek = sameDay(monday, mondayOf(today))
-    requestAnimationFrame(() => {
+    // Раскладка доезжает не сразу: подстраивается высота карусели, дорисовываются
+    // шрифты и картинки. Одиночная прокрутка попадала мимо — особенно на телефоне,
+    // где сдвиг больше. Поэтому целимся ещё раз, когда всё встало на место.
+    const dayId = `day-${DAY_ORDER[(today.getDay() + 6) % 7]}`
+    const jump = (behavior) => {
       if (isCurrentWeek) {
-        const el = document.getElementById(`day-${DAY_ORDER[(today.getDay() + 6) % 7]}`)
+        const el = document.getElementById(dayId)
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          el.scrollIntoView({ behavior, block: 'start' })
           return
         }
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    })
+      window.scrollTo({ top: 0, behavior })
+    }
 
+    const raf = requestAnimationFrame(() => jump('smooth'))
+    const settle = setTimeout(() => jump('auto'), 450)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(settle)
+    }
   }, [lessons])
 
   const weekMounted = useRef(false)

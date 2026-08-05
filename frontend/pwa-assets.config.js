@@ -15,5 +15,7 @@ export default defineConfig({
       resizeOptions: { fit: 'contain', background: '#ff8400' },
     },
   },
-  images: ['public/app-icon.svg'],
+  // Исходник иконки. Из него генерируются все размеры: favicon, иконки
+  // установленного приложения и картинка для iOS.
+  images: ['public/app-icon.png'],
 })

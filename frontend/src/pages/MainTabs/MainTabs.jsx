@@ -145,7 +145,10 @@ export default function MainTabs() {
           className="overflow-hidden transition-[height] duration-200 ease-out"
           style={height ? { height } : undefined}
         >
-          <div className="flex">
+          {/* items-start обязателен: по умолчанию элементы ряда растягиваются
+              по самому высокому, и короткие вкладки получали высоту расписания —
+              подвал уезжал далеко вниз. */}
+          <div className="flex items-start">
             {pages.map((page, i) => (
               <div
                 key={i}
