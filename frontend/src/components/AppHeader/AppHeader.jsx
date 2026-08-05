@@ -45,7 +45,15 @@ export default function AppHeader({ title = 'Расписание', to = '/login
   // по высоте содержимого, прилипать будет некуда и шапка уедет вместе со страницей.
   return (
     <header ref={ref} className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-      {scrolled && <div className="fade-layer fade-layer-top" aria-hidden />}
+      {/* Не размонтируем, а гасим прозрачностью — иначе затемнение
+          появлялось и исчезало рывком. */}
+      <div
+        className={
+          'fade-layer fade-layer-top transition-opacity duration-300 ' +
+          (scrolled ? 'opacity-100' : 'opacity-0')
+        }
+        aria-hidden
+      />
 
       {/* Контейнер такой же, как у содержимого ниже: max-w вместе с боковыми
           отступами. Раньше отступы были на внешнем блоке, и карточка шапки

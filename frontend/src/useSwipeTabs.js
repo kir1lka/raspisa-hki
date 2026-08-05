@@ -19,6 +19,10 @@ export function useSwipeTabs(current) {
   const navigate = useNavigate()
 
   useEffect(() => {
+    // Жесты отключены: вкладки переключаются только нижним меню.
+    // Свайп конфликтовал с вертикальной прокруткой длинного расписания.
+    return
+    // eslint-disable-next-line no-unreachable
     const index = TABS.indexOf(current)
     if (index === -1) return
 

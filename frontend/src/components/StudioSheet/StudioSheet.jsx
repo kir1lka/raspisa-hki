@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X, ChevronLeft, ChevronRight, Image as ImageIcon, User } from 'lucide-react'
 import { RichText } from '../RichTextEditor/RichTextEditor'
 import angryImg from '../../assets/angry.png'
@@ -300,7 +301,10 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
     </>
   )
 
-  return (
+  // Портал в body обязателен: лист живёт внутри слайда карусели, а у того
+  // обрезка и трансформация — position: fixed внутри такого предка считается
+  // от него, и окно вылезало где попало или на соседней вкладке.
+  return createPortal(
     <>
     <div
       /* z-60: нижняя панель навигации лежит на z-50 и перекрывала низ листа —
@@ -484,6 +488,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
         </button>
       </div>
     )}
-    </>
+    </>,
+    document.body,
   )
 }

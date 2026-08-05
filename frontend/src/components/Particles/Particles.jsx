@@ -55,7 +55,15 @@ export default function Particles() {
     const accent = () =>
       getComputedStyle(document.documentElement).getPropertyValue('--color-brand').trim() || '#3b82f6'
 
-    const draw = () => {
+    // Ограничиваем 30 кадрами в секунду: связи считаются попарно, это
+    // самая тяжёлая часть, а движение медленное — разницы на глаз нет,
+    // зато телефон греется заметно меньше.
+    let last = 0
+    const draw = (now = 0) => {
+      raf = requestAnimationFrame(draw)
+      if (now - last < 33) return
+      last = now
+
       const color = accent()
       const linkDist = linkDistFor(w)
       ctx.clearRect(0, 0, w, h)
@@ -93,8 +101,6 @@ export default function Particles() {
         ctx.fill()
       }
       ctx.globalAlpha = 1
-
-      raf = requestAnimationFrame(draw)
     }
 
     const start = () => {

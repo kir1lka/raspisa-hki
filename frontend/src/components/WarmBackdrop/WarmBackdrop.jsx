@@ -31,12 +31,16 @@ export default function WarmBackdrop() {
 
   if (!enabled) return null
 
+
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {BALLS.map((b, i) => (
         <span
           key={i}
-          className="ball"
+          /* На телефоне половину пятен прячем: огромное размытие
+             пересчитывается каждый кадр и заметно греет устройство.
+             Через CSS, а не через JS — иначе не реагирует на поворот экрана. */
+          className={'ball ' + (i >= 4 ? 'max-sm:hidden' : '')}
           style={{
             top: b.top,
             left: b.left,

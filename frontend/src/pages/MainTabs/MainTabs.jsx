@@ -50,9 +50,11 @@ export default function MainTabs() {
     align: 'start',
     containScroll: 'trimSnaps',
     duration: 20,
-    // Явно: за один жест — ровно один слайд, без проскока через соседний.
     skipSnaps: false,
     dragFree: false,
+    // Перелистывание пальцем выключено: переключаемся только нижним меню.
+    // Жест конфликтовал с вертикальной прокруткой длинного расписания.
+    watchDrag: false,
   })
 
   useEffect(() => {
