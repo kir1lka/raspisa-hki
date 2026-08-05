@@ -41,6 +41,7 @@ export default function MainTabs() {
   const [groups, setGroups] = useState([])
   const [teachers, setTeachers] = useState([])
   const [height, setHeight] = useState(null)
+  const [dragging, setDragging] = useState(false)
 
   const slideRefs = useRef([])
   const dragged = useRef(false)
@@ -49,6 +50,9 @@ export default function MainTabs() {
     align: 'start',
     containScroll: 'trimSnaps',
     duration: 20,
+    // Явно: за один жест — ровно один слайд, без проскока через соседний.
+    skipSnaps: false,
+    dragFree: false,
   })
 
   useEffect(() => {
@@ -59,6 +63,10 @@ export default function MainTabs() {
   // Высота карусели = высота активного слайда. Содержимое приходит асинхронно,
   // поэтому следим за размером, а не меряем один раз.
   useEffect(() => {
+    // Во время жеста высоту не трогаем. Расписание намного выше остальных
+    // вкладок, и её смена прямо посреди перетаскивания сбивала Embla расчёт
+    // границ — палец «проскакивал» через слайд.
+    if (dragging) return
     const el = slideRefs.current[index]
     if (!el) return
     const apply = () => setHeight(el.offsetHeight)
@@ -66,15 +74,19 @@ export default function MainTabs() {
     const ro = new ResizeObserver(apply)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [index])
+  }, [index, dragging])
 
   // Адрес меняем только после жеста пальцем: при инициализации карусель сама
   // сообщает о выборе слайда, и без этой проверки клик по вкладке откатывался.
   useEffect(() => {
     if (!embla) return
 
-    const onPointerDown = () => { dragged.current = true }
+    const onPointerDown = () => {
+      dragged.current = true
+      setDragging(true)
+    }
     const onSettle = () => {
+      setDragging(false)
       if (!dragged.current) return
       dragged.current = false
       const i = embla.selectedScrollSnap()

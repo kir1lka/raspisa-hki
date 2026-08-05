@@ -119,9 +119,17 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
     else if (teacherId) setLastSelection({ type: 'teacher', value: teacherId })
   }, [number, teacherId, base])
 
+  // Подводим к сегодняшнему дню только когда выбрали другую группу или
+  // преподавателя. При свайпах и переключении вкладок расписание то же самое —
+  // прыгать не нужно, иначе страница уезжает под руками.
+  const scrolledFor = useRef(null)
+
   useEffect(() => {
     if (!lessons.length) return
     if (embedded && !active) return
+    const key = `${number || ''}|${teacherId || ''}`
+    if (scrolledFor.current === key) return
+    scrolledFor.current = key
     const today = new Date()
     const isCurrentWeek = sameDay(monday, mondayOf(today))
     requestAnimationFrame(() => {

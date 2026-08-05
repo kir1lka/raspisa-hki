@@ -7,6 +7,17 @@ export function useUiSettings() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     localStorage.setItem('theme', theme)
+
+    // theme-color красит системную полосу на телефоне (статус-бар в iOS,
+    // шапку браузера в Android). Без обновления она оставалась цвета
+    // прошлой темы и не совпадала с сайтом.
+    let meta = document.querySelector('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'theme-color'
+      document.head.appendChild(meta)
+    }
+    meta.content = theme === 'dark' ? '#15171c' : '#e9e9e9'
   }, [theme])
 
   useEffect(() => {

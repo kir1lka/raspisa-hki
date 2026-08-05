@@ -1,8 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { getLastSelection, defaultSelectionPath } from '../../defaultSelection'
 
-const TABS = [
-  { to: '/', label: 'Расписание', key: 'schedule' },
+// Вкладка расписания ведёт сразу на запомненную группу, а не на «/».
+// Через «/» шёл редирект, из-за него каркас пересоздавался и расписание
+// перезагружалось при каждом нажатии.
+const tabs = () => [
+  { to: defaultSelectionPath(getLastSelection()) || '/', label: 'Расписание', key: 'schedule' },
   { to: '/studios', label: 'Студии', key: 'studios' },
   { to: '/events', label: 'События', key: 'events' },
 ]
@@ -67,7 +71,7 @@ export default function TabBar({ active = 'schedule' }) {
           />
         )}
 
-        {TABS.map((t) => (
+        {tabs().map((t) => (
           <NavLink
             key={t.key}
             to={t.to}

@@ -2,9 +2,12 @@ import { useEffect, useRef } from 'react'
 import { useIsDark } from '../../useIsDark'
 import { useBgEffects } from '../../useBgEffects'
 
-const COUNT = 70
 const SPEED = 0.06 // пикселей за кадр — намеренно очень медленно
-const LINK_DIST = 130
+
+// На телефоне экран меньше, и то же число точек выглядит кашей.
+// Считаем по площади окна, а не по фиксированному числу.
+const countFor = (w) => (w < 640 ? 24 : w < 1024 ? 45 : 70)
+const linkDistFor = (w) => (w < 640 ? 90 : 130)
 
 /**
  * Медленно плывущие частицы с линиями между близкими соседями.
@@ -40,7 +43,7 @@ export default function Particles() {
     }
 
     const seed = () => {
-      dots = Array.from({ length: COUNT }, () => ({
+      dots = Array.from({ length: countFor(w) }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
         vx: (Math.random() - 0.5) * SPEED * 2,
@@ -54,6 +57,7 @@ export default function Particles() {
 
     const draw = () => {
       const color = accent()
+      const linkDist = linkDistFor(w)
       ctx.clearRect(0, 0, w, h)
 
       for (const d of dots) {
@@ -70,10 +74,10 @@ export default function Particles() {
           const dx = dots[i].x - dots[j].x
           const dy = dots[i].y - dots[j].y
           const dist = Math.hypot(dx, dy)
-          if (dist > LINK_DIST) continue
+          if (dist > linkDist) continue
           // На светлом фоне оранжевый читается слабее синего на тёмном,
           // поэтому там линии и точки чуть плотнее.
-          ctx.globalAlpha = (1 - dist / LINK_DIST) * (dark ? 0.16 : 0.26)
+          ctx.globalAlpha = (1 - dist / linkDist) * (dark ? 0.16 : 0.26)
           ctx.beginPath()
           ctx.moveTo(dots[i].x, dots[i].y)
           ctx.lineTo(dots[j].x, dots[j].y)

@@ -79,6 +79,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto w-full max-w-[1140px] flex-1 px-3 pb-12 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
         <CollapsibleSection
+          wide
           icon={CalendarDays}
           title="Общее расписание школы"
           collapsed={collapsed.schedule}
@@ -121,7 +122,9 @@ export default function DashboardPage() {
   )
 }
 
-function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, children }) {
+// wide — только для разделов с широкой таблицей: подложка тянется по её ширине.
+// Для остальных это вредно: сетка студий от w-max растягивалась во всю длину.
+function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, wide = false, children }) {
   return (
     <section className="mt-10 md:mt-14">
       <button
@@ -143,7 +146,8 @@ function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, children }
             ? 'hidden'
             // ml-[50%] + сдвиг на половину своей ширины:  не центрирует
             // блок, который шире родителя, и таблица уезжала вправо
-            : 'ml-[50%] w-max min-w-full -translate-x-1/2 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface p-3 md:p-4'
+            : (wide ? 'ml-[50%] w-max min-w-full -translate-x-1/2 ' : 'w-full ') +
+              'rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface p-3 md:p-4'
         }
       >
         {children}
