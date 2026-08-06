@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { MONTHS_NOM, mondayOf, addDays, startOfDay, fmtShort } from '../../dates'
 
@@ -22,9 +23,13 @@ export default function CalendarModal({ open, onClose, monday, onSelect }) {
 
   const navBtn = 'grid size-9 place-items-center rounded-md text-muted transition hover:text-brand active:scale-95'
 
-  return (
+  // Портал в body обязателен, как и у StudioSheet: окно живёт внутри слайда
+  // карусели, а у неё трансформация — position: fixed внутри такого предка
+  // считается от него, и календарь уезжал вниз за край экрана.
+  // z-60 — выше нижней панели навигации (z-50), иначе она лежала поверх.
+  return createPortal(
     <div
-      className="fixed inset-0 z-40 grid animate-fade-in place-items-center bg-black/50 p-4"
+      className="fixed inset-0 z-60 grid animate-fade-in place-items-center overflow-y-auto bg-black/50 p-4"
       onClick={onClose}
     >
       <div
@@ -100,6 +105,7 @@ export default function CalendarModal({ open, onClose, monday, onSelect }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

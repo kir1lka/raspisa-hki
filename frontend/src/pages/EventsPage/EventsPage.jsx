@@ -9,7 +9,7 @@ import { getCached, loadCached } from '../../cache'
 import { useUiSettings } from '../../useUiSettings'
 import { useSwipeTabs } from '../../useSwipeTabs'
 import { hhmm } from '../../utils'
-import { MONTHS_NOM } from '../../dates'
+import { MONTHS_NOM, parseIsoLocal, startOfDay } from '../../dates'
 
 const MONTH_SHORT = MONTHS_NOM.map((m) => m.slice(0, 3).toLowerCase())
 
@@ -36,6 +36,21 @@ export default function EventsPage({ embedded = false }) {
 
     loadCached('studios', fetchStudios).then(setStudios).catch(() => setStudios([]))
   }, [])
+
+  // Показываем только текущий месяц и только то, что ещё впереди — иначе
+  // страница со временем превращается в архив прошедшего. Список сам худеет
+  // к концу месяца и сам наполняется, когда наступает следующий: ничего
+  // переключать руками не нужно.
+  //
+  // Граница — по дню, а не по времени: мероприятие, которое идёт или уже
+  // закончилось сегодня, остаётся до конца суток. Так на вкладку можно зайти
+  // вечером и увидеть, что было днём.
+  const today = startOfDay(new Date())
+  const monthTitle = `${MONTHS_NOM[today.getMonth()]} ${today.getFullYear()}`
+  const upcoming = events.filter((e) => {
+    const d = parseIsoLocal(e.date)
+    return d >= today && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
+  })
 
   return (
     <div className={embedded ? 'w-full' : 'flex min-h-[100dvh] flex-col [--ui-base:1]'}>
@@ -65,14 +80,23 @@ export default function EventsPage({ embedded = false }) {
                 </div>
               ))}
             </div>
-          ) : events.length === 0 ? (
+          ) : upcoming.length === 0 ? (
             <div className="rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed border-line px-5 py-10 text-center text-base text-muted">
-              Мероприятий пока нет
+              {/* Разделяем два случая: мероприятий в базе нет вообще или все
+                  в этом месяце уже прошли. Иначе непонятно, почему пусто. */}
+              {events.length === 0
+                ? 'Мероприятий пока нет'
+                : 'В этом месяце мероприятий больше нет'}
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {events.map((e, i) => {
-                const d = new Date(e.date)
+              {/* Подпись месяца: без неё короткий список выглядит так, будто
+                  часть мероприятий потерялась. */}
+              <p className="mb-1 text-center text-[13px] font-bold tracking-[0.11em] text-muted uppercase">
+                {monthTitle}
+              </p>
+              {upcoming.map((e, i) => {
+                const d = parseIsoLocal(e.date)
                 return (
                   <article
                     key={e.id}

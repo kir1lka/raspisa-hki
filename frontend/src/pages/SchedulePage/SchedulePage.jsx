@@ -136,11 +136,22 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
     // шрифты и картинки. Одиночная прокрутка попадала мимо — особенно на телефоне,
     // где сдвиг больше. Поэтому целимся ещё раз, когда всё встало на место.
     const dayId = `day-${DAY_ORDER[(today.getDay() + 6) % 7]}`
+    // scrollIntoView здесь использовать нельзя: он прокручивает ВСЕХ
+    // прокручиваемых предков, а карусель вкладок — контейнер с overflow:hidden,
+    // который браузер тоже считает прокручиваемым. Она уезжала вниз внутри
+    // своей коробки, и вернуть её пальцем было невозможно: страница
+    // не докручивалась наверх, снизу зиял пустой кусок, а липкие плашки дней
+    // переставали приклеиваться. Поэтому считаем смещение сами и двигаем
+    // только окно.
     const jump = (behavior) => {
       if (isCurrentWeek) {
         const el = document.getElementById(dayId)
         if (el) {
-          el.scrollIntoView({ behavior, block: 'start' })
+          const headerH = parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--header-h'),
+          ) || 84
+          const top = el.getBoundingClientRect().top + window.scrollY - headerH - 14
+          window.scrollTo({ top: Math.max(top, 0), behavior })
           return
         }
       }

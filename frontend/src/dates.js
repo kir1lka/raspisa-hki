@@ -38,6 +38,17 @@ export function defaultWeekStart(now = new Date()) {
   return now.getDay() === 0 ? addDays(m, 7) : m
 }
 
+/**
+ * '2026-08-14' → дата в местном времени.
+ * new Date('2026-08-14') читает строку как UTC-полночь, и восточнее Гринвича
+ * это всё ещё нужный день, а западнее — уже предыдущий. Разбираем сами,
+ * чтобы сравнение «прошло / не прошло» не зависело от часового пояса.
+ */
+export function parseIsoLocal(s) {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 export function isoLocal(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')

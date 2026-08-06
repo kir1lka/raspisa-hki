@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import useEmblaCarousel from 'embla-carousel-react'
 import AppHeader from '../../components/AppHeader/AppHeader'
@@ -45,6 +45,7 @@ export default function MainTabs() {
 
   const slideRefs = useRef([])
   const dragged = useRef(false)
+  const viewportRef = useRef(null)
 
   const [emblaRef, embla] = useEmblaCarousel({
     align: 'start',
@@ -60,6 +61,32 @@ export default function MainTabs() {
   useEffect(() => {
     loadCached('groups', fetchGroups).then(setGroups).catch(() => setGroups([]))
     loadCached('teachers', fetchTeachers).then(setTeachers).catch(() => setTeachers([]))
+  }, [])
+
+  // Ссылка на контейнер карусели нужна и Embla, и нам. Функция обязана быть
+  // стабильной: новая на каждом рендере заставляла React отцеплять и цеплять
+  // ref заново, а вместе с ним переинициализировалась вся карусель.
+  const setViewportRef = useCallback(
+    (el) => {
+      viewportRef.current = el
+      emblaRef(el)
+    },
+    [emblaRef],
+  )
+
+  // Карусель обрезает содержимое через overflow:hidden, а такой контейнер
+  // браузер считает прокручиваемым и может увести вниз сам — при автопрокрутке
+  // к элементу или при фокусе на поле внутри. Пальцем обратно его не вернуть:
+  // страница застревала, снизу оставалась пустая полоса, а липкие плашки дней
+  // сбивались. Поэтому любую вертикальную прокрутку тут же отматываем.
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const reset = () => {
+      if (el.scrollTop !== 0) el.scrollTop = 0
+    }
+    el.addEventListener('scroll', reset, { passive: true })
+    return () => el.removeEventListener('scroll', reset)
   }, [])
 
   // Высота карусели = высота активного слайда. Содержимое приходит асинхронно,
@@ -141,8 +168,13 @@ export default function MainTabs() {
 
       <main className="flex flex-1 flex-col">
         <div
-          ref={emblaRef}
-          className="overflow-hidden transition-[height] duration-200 ease-out"
+          ref={setViewportRef}
+          /* Именно clip, а не hidden: hidden делает контейнер прокручиваемым,
+             и тогда липкие плашки дней цепляются к нему, а не к окну — при
+             прокрутке вниз они переставали прилипать к верху. Плюс такой
+             контейнер браузер мог сам увести вниз, и страница застревала.
+             clip обрезает соседние слайды так же, но прокрутки не создаёт. */
+          className="overflow-clip transition-[height] duration-200 ease-out"
           style={height ? { height } : undefined}
         >
           {/* items-start обязателен: по умолчанию элементы ряда растягиваются

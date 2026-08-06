@@ -11,13 +11,22 @@ export function useUiSettings() {
     // theme-color красит системную полосу на телефоне (статус-бар в iOS,
     // шапку браузера в Android). Без обновления она оставалась цвета
     // прошлой темы и не совпадала с сайтом.
-    let meta = document.querySelector('meta[name="theme-color"]')
-    if (!meta) {
-      meta = document.createElement('meta')
+    //
+    // Тегов в документе ДВА: один свой из index.html, второй дописывает
+    // vite-plugin-pwa из theme_color манифеста. Раньше querySelector правил
+    // только первый, второй навсегда оставался светлым — и браузеры, которые
+    // берут последний подходящий, показывали полосу цвета старой темы.
+    // Поэтому обновляем все, сколько бы их ни было.
+    const color = theme === 'dark' ? '#15171c' : '#e9e9e9'
+    const metas = document.querySelectorAll('meta[name="theme-color"]')
+    if (metas.length === 0) {
+      const meta = document.createElement('meta')
       meta.name = 'theme-color'
       document.head.appendChild(meta)
+      meta.content = color
+    } else {
+      metas.forEach((m) => { m.content = color })
     }
-    meta.content = theme === 'dark' ? '#15171c' : '#e9e9e9'
   }, [theme])
 
   useEffect(() => {
