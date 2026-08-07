@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Pencil, Trash2, X, Check, LoaderCircle, GripVertical, Sparkles, FileSpreadsheet, Clock, Info, RefreshCw, Users } from 'lucide-react'
 import { fetchAllLessons, fetchGroupsList, createLesson, updateLesson, deleteLesson, createGroup, updateGroup, deleteGroup } from '../../api'
@@ -55,6 +55,7 @@ export default function SchoolSchedule() {
   const [error, setError] = useState(null)
   const [form, setForm] = useState(null)
   const [timeEdit, setTimeEdit] = useState(null)
+  const [extraMorning, setExtraMorning] = useState(0)
   const [extraAfternoon, setExtraAfternoon] = useState(0)
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(null)
@@ -304,18 +305,53 @@ export default function SchoolSchedule() {
       .sort((a, b) => a - b)
   }
 
+  /**
+   * Смена занятия — это смена его группы.
+   *
+   * Раньше её определяли по времени начала: «с 14:00 и позже — вторая смена».
+   * Это ломалось на границе. Седьмое занятие первой смены при 40 + 10 минутах
+   * начинается ровно в 14:00, и только что добавленное занятие само собой
+   * перепрыгивало во вторую таблицу. А смена группы уже хранится в базе и
+   * уже ограничивает, какую группу в какую таблицу можно добавить, — значит
+   * это и есть источник истины.
+   *
+   * Время оставлено запасным вариантом на случай, если список групп ещё
+   * не успел загрузиться.
+   */
+  const groupShift = useMemo(() => {
+    const map = new Map()
+    groups.forEach((g) => map.set(g.number, g.shift || 'MORNING'))
+    return map
+  }, [groups])
+
+  const isAfternoonLesson = useCallback(
+    (l) => (groupShift.has(l.groupNumber) ? groupShift.get(l.groupNumber) === 'AFTERNOON' : hhmm(l.time) >= '14:00'),
+    [groupShift],
+  )
+
   const layout = useMemo(() => {
-    const afternoonOrders = lessons
-      .filter((l) => hhmm(l.time) >= '14:00')
-      .map((l) => l.orderNumber)
-      .filter(Boolean)
-    const minA = afternoonOrders.length ? Math.min(...afternoonOrders) : 6
-    const maxA = afternoonOrders.length ? Math.max(...afternoonOrders) : 5
-    const morningRows = Math.max(minA - 1, 5)
-    const afternoonBase = afternoonOrders.length ? maxA - minA + 1 : 5
-    const afternoonRows = Math.max(afternoonBase, 5) + extraAfternoon
-    return { firstAfternoon: morningRows + 1, morningRows, afternoonRows }
-  }, [lessons, extraAfternoon])
+    const ordersOf = (pred) => lessons.filter(pred).map((l) => l.orderNumber).filter(Boolean)
+    const afternoonOrders = ordersOf(isAfternoonLesson)
+    const morningOrders = ordersOf((l) => !isAfternoonLesson(l))
+    const maxM = morningOrders.length ? Math.max(...morningOrders) : 0
+
+    if (!afternoonOrders.length) {
+      // Второй смены в расписании нет — границу держим сами, иначе строки
+      // первой смены дальше пятой было бы не показать.
+      const morningRows = Math.max(maxM, 5) + extraMorning
+      return { morningRows, firstAfternoon: morningRows + 1, afternoonRows: 5 + extraAfternoon }
+    }
+
+    const minA = Math.min(...afternoonOrders)
+    const maxA = Math.max(...afternoonOrders)
+    // Границу задаёт первое занятие второй смены. Пола в пять строк здесь
+    // быть не должно: после удаления строки номера сдвигаются вверх, занятия
+    // второй смены съезжали на пятый номер и ниже — а таблица первой смены
+    // всё равно растягивалась на пять строк и показывала их у себя.
+    const morningRows = Math.max(minA - 1, 1)
+    const afternoonRows = Math.max(maxA - minA + 1, 5) + extraAfternoon
+    return { morningRows, firstAfternoon: morningRows + 1, afternoonRows }
+  }, [lessons, isAfternoonLesson, extraMorning, extraAfternoon])
 
   function cellLessons(dayKey, order) {
     return lessons
@@ -398,6 +434,7 @@ export default function SchoolSchedule() {
     const after = lessons.filter((l) => l.orderNumber > order)
     if (inRow.length === 0 && after.length === 0) {
       if (session === 'afternoon') setExtraAfternoon((n) => Math.max(0, n - 1))
+      else setExtraMorning((n) => Math.max(0, n - 1))
       return
     }
     setBusy(true)
@@ -405,6 +442,7 @@ export default function SchoolSchedule() {
       await Promise.all(inRow.map((l) => deleteLesson(l.id)))
       await Promise.all(after.map((l) => updateLesson(l.id, lessonPayload(l, { orderNumber: l.orderNumber - 1 }))))
       if (session === 'afternoon') setExtraAfternoon((n) => Math.max(0, n - 1))
+      else setExtraMorning((n) => Math.max(0, n - 1))
       toast?.success(`Строка №${order} удалена`)
       reload()
     } catch (e) {
@@ -415,7 +453,7 @@ export default function SchoolSchedule() {
   }
 
   function askDeleteAll(session, label) {
-    const target = lessons.filter((l) => (session === 'morning') === (hhmm(l.time) < '14:00'))
+    const target = lessons.filter((l) => (session === 'afternoon') === isAfternoonLesson(l))
     setConfirm({
       title: 'Удалить все данные?',
       message: `Будут безвозвратно удалены ВСЕ занятия таблицы «${label}» (${target.length} шт.). Вы уверены?`,
@@ -426,6 +464,7 @@ export default function SchoolSchedule() {
         try {
           await Promise.all(target.map((l) => deleteLesson(l.id)))
           if (session === 'afternoon') setExtraAfternoon(0)
+          else setExtraMorning(0)
           toast?.success(`Все занятия таблицы «${label}» удалены`)
           reload()
         } catch (e) {
@@ -503,7 +542,13 @@ export default function SchoolSchedule() {
   }
 
   async function addMorningRow() {
-    const afternoon = lessons.filter((l) => hhmm(l.time) >= '14:00')
+    const afternoon = lessons.filter(isAfternoonLesson)
+    if (!afternoon.length) {
+      // Сдвигать нечего: без занятий второй смены нумерация ни с чем
+      // не конфликтует, просто показываем ещё одну пустую строку.
+      setExtraMorning((n) => n + 1)
+      return
+    }
     setBusy(true)
     try {
       await Promise.all(afternoon.map((l) => updateLesson(l.id, lessonPayload(l, { orderNumber: (l.orderNumber ?? 0) + 1 }))))

@@ -288,13 +288,15 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
   const descriptionBlock = (
     <>
       <h3 className="text-lg font-bold text-ink sm:text-xl">{isEvent ? 'Мероприятие' : 'Описание'}</h3>
+      {/* На широком экране лист растягивается почти на всю ширину, и текст
+          в 15px читался мелким — на телефоне размер оставляем прежним. */}
       {(isEvent ? lesson?.description : studio?.description) ? (
         <RichText
           value={isEvent ? lesson.description : studio.description}
-          className="mt-2 text-[15px] leading-relaxed text-ink/80"
+          className="mt-2 text-[15px] leading-relaxed text-ink/80 sm:text-[17px] md:text-lg"
         />
       ) : (
-        <p className="mt-2 text-[15px] leading-relaxed text-ink/80">
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/80 sm:text-[17px] md:text-lg">
           {isEvent ? 'Описание появится позже.' : 'Описание студии появится позже.'}
         </p>
       )}

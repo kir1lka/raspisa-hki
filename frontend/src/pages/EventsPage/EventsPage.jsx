@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import AppHeader from '../../components/AppHeader/AppHeader'
 import TabBar from '../../components/TabBar/TabBar'
 import SettingsModal from '../../components/SettingsModal/SettingsModal'
@@ -37,19 +37,40 @@ export default function EventsPage({ embedded = false }) {
     loadCached('studios', fetchStudios).then(setStudios).catch(() => setStudios([]))
   }, [])
 
-  // Показываем только текущий месяц и только то, что ещё впереди — иначе
-  // страница со временем превращается в архив прошедшего. Список сам худеет
-  // к концу месяца и сам наполняется, когда наступает следующий: ничего
-  // переключать руками не нужно.
+  // Окно показа — текущий и следующий месяц, и только то, что ещё впереди.
+  // Прошедшее не показываем, иначе страница превращается в архив; дальше двух
+  // месяцев тоже не показываем, иначе ближайшее теряется в длинной афише.
+  // Окно едет само: ничего переключать руками не нужно.
   //
-  // Граница — по дню, а не по времени: мероприятие, которое идёт или уже
-  // закончилось сегодня, остаётся до конца суток. Так на вкладку можно зайти
-  // вечером и увидеть, что было днём.
+  // Граница «прошло» — по дню, а не по времени: мероприятие, которое идёт или
+  // уже закончилось сегодня, остаётся до конца суток. Так на вкладку можно
+  // зайти вечером и увидеть, что было днём.
   const today = startOfDay(new Date())
-  const monthTitle = `${MONTHS_NOM[today.getMonth()]} ${today.getFullYear()}`
+  const windowEnd = new Date(today.getFullYear(), today.getMonth() + 2, 1)
+
   const upcoming = events.filter((e) => {
     const d = parseIsoLocal(e.date)
-    return d >= today && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
+    return d >= today && d < windowEnd
+  })
+  // Плашку «будут и дальше» показываем, только если дальше действительно
+  // что-то стоит в расписании — обещать несуществующее нельзя.
+  const hasLater = events.some((e) => parseIsoLocal(e.date) >= windowEnd)
+
+  // Группируем по месяцам: их в списке теперь два, и без подписей непонятно,
+  // где кончается один и начинается другой. events уже отсортирован по дате,
+  // поэтому и группы выходят по порядку.
+  const months = []
+  upcoming.forEach((e, i) => {
+    const d = parseIsoLocal(e.date)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    let group = months.find((m) => m.key === key)
+    if (!group) {
+      group = { key, title: `${MONTHS_NOM[d.getMonth()]} ${d.getFullYear()}`, items: [] }
+      months.push(group)
+    }
+    // Индекс сквозной по всему списку, иначе задержка появления карточек
+    // сбрасывалась бы на каждом месяце.
+    group.items.push({ event: e, index: i })
   })
 
   return (
@@ -82,22 +103,32 @@ export default function EventsPage({ embedded = false }) {
             </div>
           ) : upcoming.length === 0 ? (
             <div className="rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed border-line px-5 py-10 text-center text-base text-muted">
-              {/* Разделяем два случая: мероприятий в базе нет вообще или все
-                  в этом месяце уже прошли. Иначе непонятно, почему пусто. */}
+              {/* Три разных случая, и путать их нельзя: мероприятий нет вовсе,
+                  ближайшие два месяца пусты, но дальше что-то есть, или всё
+                  запланированное уже прошло. */}
               {events.length === 0
                 ? 'Мероприятий пока нет'
-                : 'В этом месяце мероприятий больше нет'}
+                : hasLater
+                  ? 'В ближайшие два месяца мероприятий нет — следующие запланированы позже'
+                  : 'Ближайших мероприятий нет'}
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {/* Подпись месяца: без неё короткий список выглядит так, будто
-                  часть мероприятий потерялась. */}
-              <p className="mb-1 text-center text-[13px] font-bold tracking-[0.11em] text-muted uppercase">
-                {monthTitle}
-              </p>
-              {upcoming.map((e, i) => {
-                const d = parseIsoLocal(e.date)
-                return (
+              {months.map((month, mi) => (
+                <Fragment key={month.key}>
+                  {/* Подпись месяца: месяцев в списке два, без неё непонятно,
+                      где кончается один и начинается другой. */}
+                  <p
+                    className={
+                      (mi > 0 ? 'mt-5 ' : '') +
+                      'mb-1 text-center text-[13px] font-bold tracking-[0.11em] text-muted uppercase'
+                    }
+                  >
+                    {month.title}
+                  </p>
+                  {month.items.map(({ event: e, index: i }) => {
+                    const d = parseIsoLocal(e.date)
+                    return (
                   <article
                     key={e.id}
                     style={{ animationDelay: `${i * 60}ms` }}
@@ -126,8 +157,18 @@ export default function EventsPage({ embedded = false }) {
                       </p>
                     </div>
                   </article>
-                )
-              })}
+                    )
+                  })}
+                </Fragment>
+              ))}
+
+              {/* Показывается только когда за окном действительно что-то есть:
+                  иначе плашка обещала бы мероприятия, которых нет. */}
+              {hasLater && (
+                <div className="mt-2 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed border-line px-5 py-6 text-center text-base text-muted">
+                  Дальше тоже запланированы мероприятия – появятся здесь ближе к дате
+                </div>
+              )}
             </div>
           )}
         </div>
