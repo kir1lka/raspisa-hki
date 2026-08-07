@@ -50,7 +50,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
   const [studioLesson, setStudioLesson] = useState(null)
   const [monday, setMonday] = useState(() => defaultWeekStart())
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
-  const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 0.9)
+  const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 1)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')

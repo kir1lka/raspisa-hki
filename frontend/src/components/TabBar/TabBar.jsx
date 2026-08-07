@@ -53,10 +53,12 @@ export default function TabBar({ active = 'schedule' }) {
   }, [active])
 
   return (
-    /* Отступ снизу учитывает safe-area: в установленном приложении нет панели
-       браузера, и с обычным pb-5 меню заезжало в зону жеста «домой» — выглядело
-       так, будто оно провалилось за край экрана. */
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[calc(20px+env(safe-area-inset-bottom))]">
+    /* max, а не сумма: в установленном приложении нет панели браузера, и с
+       обычным pb-5 меню заезжало в зону жеста «домой». Но складывать 20px
+       с безопасной зоной нельзя — на телефоне с жестовой полосой выходило
+       54px, и меню висело слишком высоко над краем. Берём большее из двух:
+       на телефоне отступ ровно по высоте полосы, на остальных — те же 20px. */
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(20px,env(safe-area-inset-bottom))]">
       <div className="fade-layer fade-layer-bottom" aria-hidden />
 
       <nav

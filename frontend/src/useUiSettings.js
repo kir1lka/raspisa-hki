@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 export function useUiSettings() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
-  const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 0.9)
+  const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 1)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
