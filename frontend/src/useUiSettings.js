@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 
 export function useUiSettings() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 1)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     localStorage.setItem('theme', theme)
 
@@ -12,21 +12,19 @@ export function useUiSettings() {
     // шапку браузера в Android). Без обновления она оставалась цвета
     // прошлой темы и не совпадала с сайтом.
     //
-    // Тегов в документе ДВА: один свой из index.html, второй дописывает
-    // vite-plugin-pwa из theme_color манифеста. Раньше querySelector правил
-    // только первый, второй навсегда оставался светлым — и браузеры, которые
-    // берут последний подходящий, показывали полосу цвета старой темы.
-    // Поэтому обновляем все, сколько бы их ни было.
+    // Обновляем цвет до отрисовки нового кадра. Safari также смотрит на фон
+    // корневого элемента, поэтому задаём его явно вместе с color-scheme.
     const color = theme === 'dark' ? '#15171c' : '#e9e9e9'
-    const metas = document.querySelectorAll('meta[name="theme-color"]')
-    if (metas.length === 0) {
-      const meta = document.createElement('meta')
+    document.documentElement.style.colorScheme = theme
+    document.documentElement.style.backgroundColor = color
+
+    let meta = document.querySelector('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement('meta')
       meta.name = 'theme-color'
       document.head.appendChild(meta)
-      meta.content = color
-    } else {
-      metas.forEach((m) => { m.content = color })
     }
+    meta.content = color
   }, [theme])
 
   useEffect(() => {

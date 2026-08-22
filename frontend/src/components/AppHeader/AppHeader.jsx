@@ -30,7 +30,10 @@ export default function AppHeader({ title = 'Расписание', to = '/login
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const apply = () => document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
+    const apply = () => {
+      const height = document.documentElement.classList.contains('ios-standalone') ? 0 : el.offsetHeight
+      document.documentElement.style.setProperty('--header-h', `${height}px`)
+    }
     apply()
     const ro = new ResizeObserver(apply)
     ro.observe(el)
@@ -44,7 +47,7 @@ export default function AppHeader({ title = 'Расписание', to = '/login
   // Липким должен быть сам <header>: если обернуть его в блок, который жмётся
   // по высоте содержимого, прилипать будет некуда и шапка уедет вместе со страницей.
   return (
-    <header ref={ref} className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+    <header ref={ref} className="app-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
       {/* Не размонтируем, а гасим прозрачностью — иначе затемнение
           появлялось и исчезало рывком. */}
       <div

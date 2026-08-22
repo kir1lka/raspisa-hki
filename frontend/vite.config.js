@@ -14,6 +14,9 @@ export default defineConfig({
       pwaAssets: {
         config: true,
         overrideManifestIcons: true,
+        // theme-color уже есть в index.html и меняется вместе с темой.
+        // Второй тег от генератора оставался светлым и сбивал Safari.
+        injectThemeColor: false,
       },
       manifest: {
         // id закрепляет тождество приложения. Без него браузер опознаёт PWA

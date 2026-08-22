@@ -206,6 +206,17 @@
   background-color: var(--color-canvas);
 }
 
+/* Safari на iOS 26 рисует отдельную сплошную заливку над страницей, когда
+   рядом с системной областью есть fixed/sticky-элемент. На странице входа
+   таких элементов нет, поэтому верх остаётся частью общего фона. Повторяем
+   это поведение только в установленном iOS-приложении; сайт сохраняет
+   привычные липкие заголовки. */
+html.ios-standalone .app-header,
+html.ios-standalone .app-day-heading {
+  position: relative;
+  top: auto;
+}
+
 @layer utilities {
   .text-halo {
     text-shadow:

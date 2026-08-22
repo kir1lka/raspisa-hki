@@ -17,6 +17,7 @@ import { getCached, setCache } from '../../cache'
 import { useSwipeTabs } from '../../useSwipeTabs'
 import { DAY_ORDER } from '../../utils'
 import { mondayOf, addDays, sameDay, defaultWeekStart } from '../../dates'
+import { useUiSettings } from '../../useUiSettings'
 
 // embedded — страница внутри общего каркаса MainTabs: обвязку рисует он.
 // selection — выбранная группа или преподаватель, переданные снаружи.
@@ -49,18 +50,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [studioLesson, setStudioLesson] = useState(null)
   const [monday, setMonday] = useState(() => defaultWeekStart())
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
-  const [zoom, setZoom] = useState(() => Number(localStorage.getItem('ui-zoom')) || 1)
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--ui-zoom', String(zoom))
-    localStorage.setItem('ui-zoom', String(zoom))
-  }, [zoom])
+  const { theme, toggleTheme, zoom, setZoom } = useUiSettings()
 
   useEffect(() => {
     fetchGroups().then(setGroups).catch(() => setGroups([]))
@@ -186,7 +176,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
           title="Расписание"
           to={base ? '/dashboard' : '/login'}
           theme={theme}
-          onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          onToggleTheme={toggleTheme}
           onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
@@ -264,7 +254,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        onToggleTheme={toggleTheme}
         zoom={zoom}
         onZoomChange={setZoom}
         groups={groups}

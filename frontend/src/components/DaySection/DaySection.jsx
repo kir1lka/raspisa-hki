@@ -30,7 +30,7 @@ export default function DaySection({ day, date, status, lessons, byTeacher = fal
         className={
           // --header-h приходит в обычных пикселях, а плашка живёт внутри
           // блока с zoom — поэтому делим на масштаб, иначе отступ уедет.
-          'sticky top-[calc((var(--header-h,84px)+10px)/(var(--ui-base)*var(--ui-zoom)))] z-20 mb-3.5 flex items-center gap-3 rounded-card px-3 py-2 ' +
+          'app-day-heading sticky top-[calc((var(--header-h,84px)+10px)/(var(--ui-base)*var(--ui-zoom)))] z-20 mb-3.5 flex items-center gap-3 rounded-card px-3 py-2 ' +
           (isToday
             ? 'border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-white/40 bg-gradient-to-br from-brand-light to-brand text-white'
             : 'border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-canvas')
