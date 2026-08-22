@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Moon, Sun, Settings } from 'lucide-react'
 
@@ -13,16 +13,6 @@ import { Moon, Sun, Settings } from 'lucide-react'
 // должна тянуться по ним, иначе поиск заметно длиннее её.
 export default function AppHeader({ title = 'Расписание', to = '/login', theme, onToggleTheme, onOpenSettings, wide = false }) {
   const ref = useRef(null)
-  const [scrolled, setScrolled] = useState(false)
-
-  // На самом верху размытие и затемнение не нужны: под шапкой ничего не едет,
-  // а полоса всё равно видна и не совпадает с фоном страницы.
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   // Высоту шапки замеряем и кладём в CSS-переменную: под неё прилипают
   // заголовки дней. Считать её формулой нельзя — из-за zoom и масштаба
@@ -48,15 +38,9 @@ export default function AppHeader({ title = 'Расписание', to = '/login
   // по высоте содержимого, прилипать будет некуда и шапка уедет вместе со страницей.
   return (
     <header ref={ref} className="app-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-      {/* Не размонтируем, а гасим прозрачностью — иначе затемнение
-          появлялось и исчезало рывком. */}
-      <div
-        className={
-          'fade-layer fade-layer-top z-0 transition-opacity duration-300 ' +
-          (scrolled ? 'opacity-100' : 'opacity-0')
-        }
-        aria-hidden
-      />
+      {/* Постоянный слой без переключения при прокрутке: так системная область
+          iOS не меняется рывком между сплошной заливкой и размытием. */}
+      <div className="fade-layer fade-layer-top z-0" aria-hidden />
 
       {/* Контейнер такой же, как у содержимого ниже: max-w вместе с боковыми
           отступами. Раньше отступы были на внешнем блоке, и карточка шапки

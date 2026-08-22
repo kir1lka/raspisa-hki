@@ -250,15 +250,15 @@ html.ios-standalone .app-header {
   pointer-events: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  background: color-mix(in srgb, var(--color-canvas) 68%, transparent);
+  background: color-mix(in srgb, var(--color-canvas) 80%, transparent);
   transform: translateZ(0);
-  will-change: opacity;
 }
 .fade-layer-top {
   top: 0;
-  bottom: -18px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-canvas) 68%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
 }
 /* Плавающие шары на фоне светлой темы. Сам элемент прозрачный —
    видно только его размытую тень, которая ходит по кругу вокруг
