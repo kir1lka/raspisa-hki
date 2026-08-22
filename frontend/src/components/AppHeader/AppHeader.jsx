@@ -52,7 +52,7 @@ export default function AppHeader({ title = 'Расписание', to = '/login
           появлялось и исчезало рывком. */}
       <div
         className={
-          'fade-layer fade-layer-top transition-opacity duration-300 ' +
+          'fade-layer fade-layer-top z-0 transition-opacity duration-300 ' +
           (scrolled ? 'opacity-100' : 'opacity-0')
         }
         aria-hidden
@@ -61,7 +61,7 @@ export default function AppHeader({ title = 'Расписание', to = '/login
       {/* Контейнер такой же, как у содержимого ниже: max-w вместе с боковыми
           отступами. Раньше отступы были на внешнем блоке, и карточка шапки
           выходила шире расписания на ширину этих отступов. */}
-      <div className="relative pt-3 pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+      <div className="relative z-10 pt-3 pb-4 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
         <div className={'mx-auto px-3 md:px-6 ' + (wide ? 'max-w-[1140px]' : 'max-w-[772px]')}>
           <div className="flex items-center gap-3 rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface px-3.5 py-2.5">
           <Link

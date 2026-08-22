@@ -2,6 +2,28 @@ import { useState } from 'react'
 import confetti from 'canvas-confetti'
 import { PartyPopper, Palmtree } from 'lucide-react'
 
+function launchConfetti(e) {
+  // canvas-confetti по умолчанию создаёт fixed-слой на весь экран. В iOS PWA
+  // такой слой касается верхней системной области и на время анимации заменяет
+  // её размытие сплошной заливкой. Абсолютный canvas остаётся в самой странице
+  // и не влияет на оформление статус-бара.
+  const canvas = document.createElement('canvas')
+  canvas.className = 'confetti-layer'
+  canvas.style.top = `${window.scrollY}px`
+  document.body.appendChild(canvas)
+
+  const fire = confetti.create(canvas, { resize: true })
+  const animation = fire({
+    particleCount: 120,
+    spread: 80,
+    startVelocity: 40,
+    disableForReducedMotion: true,
+    origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+  })
+
+  Promise.resolve(animation).finally(() => canvas.remove())
+}
+
 /**
  * День без занятий: каникулы или праздник. Название берётся из базы
  * (таблица праздников в админ-панели), поэтому здесь только оформление.
@@ -13,12 +35,7 @@ export default function HolidayCard({ label, type, name }) {
   const Icon = type === 'holiday' ? PartyPopper : Palmtree
 
   function handleClick(e) {
-    confetti({
-      particleCount: 120,
-      spread: 80,
-      startVelocity: 40,
-      origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
-    })
+    launchConfetti(e)
     setActive(false)
     requestAnimationFrame(() => setActive(true))
   }
