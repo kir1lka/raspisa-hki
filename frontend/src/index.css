@@ -243,36 +243,25 @@
   background: color-mix(in srgb, var(--color-canvas) 80%, transparent);
   transform: translateZ(0);
 }
-.app-sticky-backdrop {
-  position: sticky;
+.app-header-backdrop {
   top: 0;
-  z-index: 10;
-  height: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-.app-sticky-backdrop-layer {
-  top: 0;
-  height: calc(var(--header-h, 84px) + 24px);
+  bottom: 0;
+  z-index: 0;
   visibility: hidden;
   opacity: 0;
   background: color-mix(in srgb, var(--color-canvas) 72%, transparent);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 24px), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
   transition:
-    height 220ms ease,
     opacity 220ms ease,
     visibility 0s linear 220ms;
 }
-.app-sticky-backdrop.is-visible .app-sticky-backdrop-layer {
+.app-header-backdrop.is-visible {
   visibility: visible;
   opacity: 1;
   transition-delay: 0s;
-}
-.app-sticky-backdrop.with-day .app-sticky-backdrop-layer {
-  height: calc(var(--header-h, 84px) + 5px + var(--day-heading-h, 64px) + 28px);
 }
 /* Плавающие шары на фоне светлой темы. Сам элемент прозрачный —
    видно только его размытую тень, которая ходит по кругу вокруг

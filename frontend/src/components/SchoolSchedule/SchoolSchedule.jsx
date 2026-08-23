@@ -806,6 +806,18 @@ export default function SchoolSchedule() {
           />
         </div>
 
+        <div className="mt-14 border-t-2 border-line pt-10">
+          <p className="mb-3 text-2xl font-bold md:text-3xl">Сводка по группам</p>
+          <p className="mb-4 text-lg text-muted">
+            Количество занятий каждой группы в текущем недельном расписании.
+          </p>
+          <GroupSummaryTable
+            groups={groups}
+            lessons={lessons}
+            isAfternoonLesson={isAfternoonLesson}
+          />
+        </div>
+
         <button
           type="button"
           onClick={exportExcel}
@@ -937,6 +949,82 @@ function GroupShiftTable({ groups, onChangeShift, onAdd, onDelete }) {
                 </span>
               </form>
             </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function GroupSummaryTable({ groups, lessons, isAfternoonLesson }) {
+  const rows = useMemo(() => {
+    const counts = new Map()
+    const lessonShifts = new Map()
+
+    lessons.forEach((lesson) => {
+      if (lesson.special || lesson.groupNumber == null) return
+      const number = Number(lesson.groupNumber)
+      counts.set(number, (counts.get(number) || 0) + 1)
+      const shifts = lessonShifts.get(number) || new Set()
+      shifts.add(isAfternoonLesson(lesson) ? 'AFTERNOON' : 'MORNING')
+      lessonShifts.set(number, shifts)
+    })
+
+    const configured = new Map(groups.map((group) => [Number(group.number), group.shift || 'MORNING']))
+    const numbers = new Set([...configured.keys(), ...counts.keys()])
+
+    return [...numbers]
+      .sort((a, b) => a - b)
+      .map((number) => {
+        const configuredShift = configured.get(number)
+        const shifts = lessonShifts.get(number) || new Set()
+        let shift = configuredShift
+          ? SHIFTS.find((item) => item.key === configuredShift)?.label
+          : null
+        if (!shift) {
+          shift = shifts.size > 1
+            ? 'Утро и день'
+            : shifts.has('AFTERNOON')
+              ? 'Вторая смена (день)'
+              : 'Первая смена (утро)'
+        }
+        return { number, count: counts.get(number) || 0, shift }
+      })
+  }, [groups, lessons, isAfternoonLesson])
+
+  const totalLessons = rows.reduce((sum, row) => sum + row.count, 0)
+  const cell = 'border border-line px-4 py-3 text-xl text-ink'
+
+  return (
+    <div className="overflow-x-auto rounded-card border-2 border-line">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-canvas">
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Группа</th>
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Занятий в неделю</th>
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Смена</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={3} className="border border-line px-4 py-6 text-center text-lg text-muted">
+                Групп пока нет.
+              </td>
+            </tr>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.number}>
+                <td className={cell + ' text-center text-2xl font-bold'}>{row.number} группа</td>
+                <td className={cell + ' text-center text-2xl font-semibold tabular-nums'}>{row.count}</td>
+                <td className={cell}>{row.shift}</td>
+              </tr>
+            ))
+          )}
+          <tr className="bg-canvas/70 font-bold">
+            <td className={cell}>Всего групп: {rows.length}</td>
+            <td className={cell + ' text-center tabular-nums'}>{totalLessons}</td>
+            <td className={cell}>—</td>
           </tr>
         </tbody>
       </table>

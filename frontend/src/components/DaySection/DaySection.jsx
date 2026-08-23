@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import LessonCard from '../LessonCard/LessonCard'
 import HolidayCard from '../HolidayCard/HolidayCard'
 import { DAY_NAMES, MONTHS_SHORT_LOWER, lessonsWord } from '../../utils'
@@ -11,7 +10,6 @@ import { DAY_NAMES, MONTHS_SHORT_LOWER, lessonsWord } from '../../utils'
  * у неё нет — иначе она читается как ещё одно занятие и сливается со списком.
  */
 export default function DaySection({ day, date, status, lessons, byTeacher = false, isToday = false, onOpenStudio }) {
-  const headingRef = useRef(null)
   const isOff = status.type !== 'school'
   const events = lessons.filter((l) => l.special)
   const visibleLessons = isOff ? events : lessons
@@ -21,20 +19,6 @@ export default function DaySection({ day, date, status, lessons, byTeacher = fal
   // для учебного дня — количество занятий.
   const counter = isOff ? status.label : visibleLessons.length ? lessonsWord(visibleLessons.length) : 'свободно'
 
-  // Общая подложка шапки продлевается ровно на визуальную высоту прилипшего
-  // дня. getBoundingClientRect учитывает пользовательский zoom.
-  useEffect(() => {
-    const el = headingRef.current
-    if (!el) return
-    const apply = () => {
-      document.documentElement.style.setProperty('--day-heading-h', `${el.getBoundingClientRect().height}px`)
-    }
-    apply()
-    const ro = new ResizeObserver(apply)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
   return (
     /* scroll-margin равен высоте шапки: без него автопрокрутка к сегодняшнему
        дню останавливалась ровно под ней и плашка оказывалась перекрыта. */
@@ -43,10 +27,9 @@ export default function DaySection({ day, date, status, lessons, byTeacher = fal
       className="scroll-mt-[calc((var(--header-h,84px)+9px)/(var(--ui-base)*var(--ui-zoom)))]"
     >
       <div
-        ref={headingRef}
+        // --header-h приходит в обычных пикселях, а плашка живёт внутри
+        // блока с zoom — поэтому делим на масштаб, иначе отступ уедет.
         className={
-          // --header-h приходит в обычных пикселях, а плашка живёт внутри
-          // блока с zoom — поэтому делим на масштаб, иначе отступ уедет.
           'app-day-heading sticky top-[calc((var(--header-h,84px)+5px)/(var(--ui-base)*var(--ui-zoom)))] z-20 mb-3.5 flex items-center gap-3 rounded-card px-3 py-2 ' +
           (isToday
             ? 'border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-white/40 bg-gradient-to-br from-brand-light to-brand text-white'
