@@ -816,6 +816,16 @@ export default function SchoolSchedule() {
             lessons={lessons}
             isAfternoonLesson={isAfternoonLesson}
           />
+
+          <div className="mt-10">
+            <p className="mb-4 text-2xl font-bold md:text-3xl">Часы по студиям</p>
+            <StudioSummaryTable
+              lessons={lessons}
+              isAfternoonLesson={isAfternoonLesson}
+              morningLessonMin={morningLessonMin}
+              afternoonLessonMin={afternoonLessonMin}
+            />
+          </div>
         </div>
 
         <button
@@ -1026,6 +1036,70 @@ function GroupSummaryTable({ groups, lessons, isAfternoonLesson }) {
             <td className={cell + ' text-center tabular-nums'}>{totalLessons}</td>
             <td className={cell}>—</td>
           </tr>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function StudioSummaryTable({ lessons, isAfternoonLesson, morningLessonMin, afternoonLessonMin }) {
+  const rows = useMemo(() => {
+    const studios = new Map()
+
+    lessons.forEach((lesson) => {
+      if (lesson.special || !lesson.studioCode) return
+
+      const code = lesson.studioCode
+      const current = studios.get(code) || {
+        code,
+        name: lesson.studioName || code,
+        count: 0,
+        minutes: 0,
+      }
+      current.count += 1
+      current.minutes += Number(isAfternoonLesson(lesson) ? afternoonLessonMin : morningLessonMin) || 40
+      studios.set(code, current)
+    })
+
+    return [...studios.values()].sort(
+      (a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'ru'),
+    )
+  }, [lessons, isAfternoonLesson, morningLessonMin, afternoonLessonMin])
+
+  const formatDuration = (minutes) => {
+    const hours = Math.floor(minutes / 60)
+    const rest = minutes % 60
+    if (hours === 0) return `${rest} мин`
+    return rest === 0 ? `${hours} ч` : `${hours} ч ${rest} мин`
+  }
+  const cell = 'border border-line px-4 py-3 text-xl text-ink'
+
+  return (
+    <div className="overflow-x-auto rounded-card border-2 border-line">
+      <table className="w-full min-w-[640px] border-collapse">
+        <thead>
+          <tr className="bg-canvas">
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Студия</th>
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Занятий</th>
+            <th className="border border-line px-4 py-3 text-2xl font-semibold text-ink">Часов в неделю</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={3} className="border border-line px-4 py-6 text-center text-lg text-muted">
+                Занятий в студиях пока нет.
+              </td>
+            </tr>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.code}>
+                <td className={cell + ' text-center font-medium'}>{row.name} ({row.code})</td>
+                <td className={cell + ' text-center font-semibold tabular-nums'}>{row.count}</td>
+                <td className={cell + ' text-center font-semibold tabular-nums'}>{formatDuration(row.minutes)}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

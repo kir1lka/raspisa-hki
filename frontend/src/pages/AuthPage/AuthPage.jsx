@@ -35,7 +35,7 @@ export default function AuthPage() {
     'min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted/70'
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-start px-4 py-10 sm:justify-center">
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-start overflow-y-auto px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+2.5rem)] sm:justify-center">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-card border-2 border-line bg-surface p-6 shadow-xl sm:p-8"

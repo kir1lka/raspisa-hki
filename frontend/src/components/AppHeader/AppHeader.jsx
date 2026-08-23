@@ -6,8 +6,8 @@ import { Moon, Sun, Settings } from 'lucide-react'
  * Липкая шапка: карточка с названием текущей страницы, переключателем темы
  * и настройками. Название кликабельно и ведёт на вход — как логотип раньше.
  *
- * Подложка под карточкой размыта и растворяется книзу, поэтому содержимое
- * проезжает под шапкой без резкой границы.
+ * Подложка начинается ниже карточки и растворяется книзу, поэтому iOS не
+ * включает саму шапку в область backdrop-filter.
  */
 // wide — для админ-панели: там содержимое шире (таблицы), и шапка
 // должна тянуться по ним, иначе поиск заметно длиннее её.
@@ -73,11 +73,6 @@ export default function AppHeader({ title = 'Расписание', to = '/login
   // по высоте содержимого, прилипать будет некуда и шапка уедет вместе со страницей.
   return (
     <header ref={ref} className="app-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-      <div
-        className={'fade-layer app-header-backdrop ' + (backdropVisible ? 'is-visible' : '')}
-        aria-hidden
-      />
-
       {/* Контейнер такой же, как у содержимого ниже: max-w вместе с боковыми
           отступами. Раньше отступы были на внешнем блоке, и карточка шапки
           выходила шире расписания на ширину этих отступов. */}
@@ -108,6 +103,11 @@ export default function AppHeader({ title = 'Расписание', to = '/login
           </div>
         </div>
       </div>
+
+      <div
+        className={'fade-layer app-header-backdrop ' + (backdropVisible ? 'is-visible' : '')}
+        aria-hidden
+      />
     </header>
   )
 }

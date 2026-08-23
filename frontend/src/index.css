@@ -244,7 +244,10 @@
   transform: translateZ(0);
 }
 .app-header-backdrop {
-  top: 0;
+  /* Карточка заканчивается за 16px до нижнего края header. Размываем только
+     этот нижний отступ: следующий липкий блок начинается ещё на 5px ниже и
+     гарантированно не попадает в область backdrop-filter. */
+  top: calc(100% - 16px);
   bottom: 0;
   z-index: 0;
   visibility: hidden;
@@ -252,8 +255,8 @@
   background: color-mix(in srgb, var(--color-canvas) 72%, transparent);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
   transition:
     opacity 220ms ease,
     visibility 0s linear 220ms;
