@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { RefreshCw } from 'lucide-react'
 import SchedulePage from './pages/SchedulePage/SchedulePage'
 import MainTabs from './pages/MainTabs/MainTabs'
 import AuthPage from './pages/AuthPage/AuthPage'
@@ -12,22 +13,40 @@ import { getDefaultSelection, defaultSelectionPath, getLastSelection } from './d
 
 const WELCOME_KEY = 'welcome-seen-v1'
 const PULL_TO_REFRESH_THRESHOLD = 110
+const PULL_TO_REFRESH_KEY = 'pull-to-refresh-active'
 
 // В установленном PWA браузерной кнопки обновления нет. Если пользователь
 // тянет страницу вниз от самой верхней границы, отпускаем жест и перезагружаем
 // приложение после прохождения порога. Горизонтальные свайпы не перехватываем.
 function useStandalonePullToRefresh() {
   const gestureRef = useRef(null)
+  const [resumed] = useState(() => sessionStorage.getItem(PULL_TO_REFRESH_KEY) === '1')
+  const [pullDistance, setPullDistance] = useState(
+    resumed ? PULL_TO_REFRESH_THRESHOLD : 0,
+  )
+  const [refreshing, setRefreshing] = useState(resumed)
 
   useEffect(() => {
+    let reloadTimer = 0
+    const finishTimer = resumed
+      ? window.setTimeout(() => {
+          sessionStorage.removeItem(PULL_TO_REFRESH_KEY)
+          setRefreshing(false)
+          setPullDistance(0)
+        }, 1200)
+      : 0
+
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true
     const isTouchDevice = navigator.maxTouchPoints > 0 || 'ontouchstart' in window
-    if (!isStandalone || !isTouchDevice) return undefined
+    if (!isStandalone || !isTouchDevice) {
+      return () => clearTimeout(finishTimer)
+    }
 
-    const reset = () => {
+    const reset = (hideIndicator = true) => {
       gestureRef.current = null
+      if (hideIndicator) setPullDistance(0)
     }
 
     const handleTouchStart = (event) => {
@@ -46,7 +65,11 @@ function useStandalonePullToRefresh() {
 
     const handleTouchMove = (event) => {
       const gesture = gestureRef.current
-      if (!gesture || event.touches.length !== 1) return
+      if (!gesture) return
+      if (event.touches.length !== 1) {
+        reset()
+        return
+      }
 
       const touch = event.touches[0]
       const deltaX = touch.clientX - gesture.startX
@@ -58,12 +81,20 @@ function useStandalonePullToRefresh() {
       }
 
       gesture.distance = deltaY
+      setPullDistance(deltaY)
     }
 
     const handleTouchEnd = () => {
       const shouldRefresh = gestureRef.current?.distance >= PULL_TO_REFRESH_THRESHOLD
-      reset()
-      if (shouldRefresh) window.location.reload()
+      reset(!shouldRefresh)
+      if (!shouldRefresh) return
+
+      sessionStorage.setItem(PULL_TO_REFRESH_KEY, '1')
+      setRefreshing(true)
+      setPullDistance(PULL_TO_REFRESH_THRESHOLD)
+      // Небольшая пауза нужна, чтобы пользователь увидел начало вращения до
+      // того, как браузер очистит текущий React-интерфейс при reload.
+      reloadTimer = window.setTimeout(() => window.location.reload(), 300)
     }
 
     document.addEventListener('touchstart', handleTouchStart, { passive: true })
@@ -76,8 +107,37 @@ function useStandalonePullToRefresh() {
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
       document.removeEventListener('touchcancel', reset)
+      clearTimeout(reloadTimer)
+      clearTimeout(finishTimer)
     }
-  }, [])
+  }, [resumed])
+
+  return { pullDistance, refreshing }
+}
+
+function PullToRefreshIndicator({ pullDistance, refreshing }) {
+  const visible = refreshing || pullDistance > 8
+  const offsetY = Math.min(12, pullDistance * 0.45 - 36)
+  const rotation = Math.min(300, (pullDistance / PULL_TO_REFRESH_THRESHOLD) * 300)
+
+  return (
+    <div
+      role="status"
+      aria-label={refreshing ? 'Обновление данных' : 'Потяните для обновления'}
+      aria-hidden={!visible}
+      className="pointer-events-none fixed left-1/2 z-50 grid size-10 place-items-center rounded-full border-2 border-line bg-surface text-brand shadow-lg transition-[opacity,transform] duration-150"
+      style={{
+        top: 'var(--header-h, 96px)',
+        opacity: visible ? 1 : 0,
+        transform: `translate(-50%, ${offsetY}px)`,
+      }}
+    >
+      <RefreshCw
+        className={'size-5 ' + (refreshing ? 'animate-spin' : '')}
+        style={refreshing ? undefined : { transform: `rotate(${rotation}deg)` }}
+      />
+    </div>
+  )
 }
 
 function RequireAuth({ children }) {
@@ -98,7 +158,7 @@ function Home() {
 }
 
 export default function App() {
-  useStandalonePullToRefresh()
+  const pullRefresh = useStandalonePullToRefresh()
   const location = useLocation()
   const isPublic = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/dashboard')
   const [welcomeOpen, setWelcomeOpen] = useState(() => !localStorage.getItem(WELCOME_KEY))
@@ -110,6 +170,7 @@ export default function App() {
 
   return (
     <>
+    <PullToRefreshIndicator {...pullRefresh} />
     <Particles />
     <WarmBackdrop />
 
