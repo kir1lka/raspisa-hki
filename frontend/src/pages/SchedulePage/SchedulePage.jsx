@@ -140,7 +140,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
           const headerH = parseFloat(
             getComputedStyle(document.documentElement).getPropertyValue('--header-h'),
           ) || 84
-          const top = el.getBoundingClientRect().top + window.scrollY - headerH - 14
+          const top = el.getBoundingClientRect().top + window.scrollY - headerH - 9
           window.scrollTo({ top: Math.max(top, 0), behavior })
           return
         }

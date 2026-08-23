@@ -103,14 +103,7 @@ export default function EventsPage({ embedded = false }) {
             </div>
           ) : upcoming.length === 0 ? (
             <div className="rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-dashed border-line px-5 py-10 text-center text-base text-muted">
-              {/* Три разных случая, и путать их нельзя: мероприятий нет вовсе,
-                  ближайшие два месяца пусты, но дальше что-то есть, или всё
-                  запланированное уже прошло. */}
-              {events.length === 0
-                ? 'Мероприятий пока нет'
-                : hasLater
-                  ? 'В ближайшие два месяца мероприятий нет — следующие запланированы позже'
-                  : 'Ближайших мероприятий нет'}
+              В ближайшие время мероприятий нет
             </div>
           ) : (
             <div className="flex flex-col gap-3">

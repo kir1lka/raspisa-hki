@@ -17,6 +17,9 @@ export function useUiSettings() {
     const color = theme === 'dark' ? '#15171c' : '#e9e9e9'
     document.documentElement.style.colorScheme = theme
     document.documentElement.style.backgroundColor = color
+    // Safari 26 берёт цвет системной области то с html, то с body. Явное
+    // значение на обоих элементах помогает ему обновиться в том же кадре.
+    document.body.style.backgroundColor = color
 
     let meta = document.querySelector('meta[name="theme-color"]')
     if (!meta) {
