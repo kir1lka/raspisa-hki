@@ -21,8 +21,7 @@ export default function AppHeader({ title = 'Расписание', to = '/login
     const el = ref.current
     if (!el) return
     const apply = () => {
-      const height = document.documentElement.classList.contains('ios-standalone') ? 0 : el.offsetHeight
-      document.documentElement.style.setProperty('--header-h', `${height}px`)
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
     }
     apply()
     const ro = new ResizeObserver(apply)
