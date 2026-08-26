@@ -32,15 +32,22 @@ function escapeHtml(s) {
 export function prepareRichHtml(value) {
   if (!value) return ''
   if (!looksLikeHtml(value)) {
-    return protectCompoundHyphens(escapeHtml(value)).replace(/\n/g, '<br>')
+    return normalizeTextFragment(escapeHtml(value)).replace(/\n/g, '<br>')
   }
   const html = value.replace(/<a\s/gi, '<a target="_blank" rel="noopener noreferrer" ')
   // Меняем дефис только в текстовых фрагментах, не затрагивая теги и URL в
-  // атрибутах. Так «3D-моделирование» не оставляет одинокое «3D-» на строке.
+  // атрибутах. Заодно превращаем неразрывные пробелы из вставленного текста
+  // в обычные, иначе весь абзац становится одной строкой без переносов.
   return html
     .split(/(<[^>]+>)/g)
-    .map((part) => part.startsWith('<') ? part : protectCompoundHyphens(part))
+    .map((part) => part.startsWith('<') ? part : normalizeTextFragment(part))
     .join('')
+}
+
+function normalizeTextFragment(text) {
+  return protectCompoundHyphens(
+    text.replace(/(?:&nbsp;|&#160;|&#x0*a0;|\u00a0)/gi, ' '),
+  )
 }
 
 function protectCompoundHyphens(text) {
