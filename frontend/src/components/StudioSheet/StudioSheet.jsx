@@ -311,6 +311,9 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
     <div
       /* z-60: нижняя панель навигации лежит на z-50 и перекрывала низ листа —
          подпись «Фото студии» уходила под её размытие. */
+      data-no-pull-to-refresh
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-60 flex items-end justify-center bg-black/50 transition-opacity duration-300 sm:items-center sm:p-4"
       style={{ opacity: shown ? 1 : 0 }}
       onClick={close}
@@ -423,7 +426,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
 
           <div
             ref={scrollRef}
-            className="flex-1 overflow-x-hidden overflow-y-auto px-6 pt-4 pb-28"
+            className="flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-6 pt-4 pb-28"
             onTouchStart={onContentTouchStart}
             onTouchMove={onContentTouchMove}
             onTouchEnd={onTouchEnd}
@@ -449,6 +452,9 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
 
     {fullIndex !== null && photos[fullIndex] && (
       <div
+        data-no-pull-to-refresh
+        role="dialog"
+        aria-modal="true"
         className="fixed inset-0 z-[70] grid place-items-center bg-black/90 p-4"
         onClick={() => setFullIndex(null)}
       >

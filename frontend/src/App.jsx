@@ -50,7 +50,11 @@ function useStandalonePullToRefresh() {
     }
 
     const handleTouchStart = (event) => {
-      if (event.touches.length !== 1 || window.scrollY > 0) {
+      const target = event.target
+      const ignorePullToRefresh =
+        target instanceof Element && target.closest('[data-no-pull-to-refresh]')
+
+      if (ignorePullToRefresh || event.touches.length !== 1 || window.scrollY > 0) {
         reset()
         return
       }
