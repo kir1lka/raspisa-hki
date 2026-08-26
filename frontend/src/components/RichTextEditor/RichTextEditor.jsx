@@ -32,9 +32,19 @@ function escapeHtml(s) {
 export function prepareRichHtml(value) {
   if (!value) return ''
   if (!looksLikeHtml(value)) {
-    return escapeHtml(value).replace(/\n/g, '<br>')
+    return protectCompoundHyphens(escapeHtml(value)).replace(/\n/g, '<br>')
   }
-  return value.replace(/<a\s/gi, '<a target="_blank" rel="noopener noreferrer" ')
+  const html = value.replace(/<a\s/gi, '<a target="_blank" rel="noopener noreferrer" ')
+  // Меняем дефис только в текстовых фрагментах, не затрагивая теги и URL в
+  // атрибутах. Так «3D-моделирование» не оставляет одинокое «3D-» на строке.
+  return html
+    .split(/(<[^>]+>)/g)
+    .map((part) => part.startsWith('<') ? part : protectCompoundHyphens(part))
+    .join('')
+}
+
+function protectCompoundHyphens(text) {
+  return text.replace(/([\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, '$1‑')
 }
 
 export default function RichTextEditor({ value, onChange, placeholder }) {

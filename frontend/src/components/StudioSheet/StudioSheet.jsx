@@ -484,7 +484,7 @@ export default function StudioSheet({ open, onClose, lesson, studios }) {
           type="button"
           onClick={() => setFullIndex(null)}
           aria-label="Закрыть"
-          className="absolute top-4 right-4 grid size-12 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-[calc(env(safe-area-inset-right)+1rem)] z-10 grid size-12 place-items-center rounded-full bg-white/20 text-white shadow-lg transition hover:bg-white/30 active:scale-95"
         >
           <X className="size-7" />
         </button>

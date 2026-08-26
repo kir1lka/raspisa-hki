@@ -36,19 +36,22 @@
 .rte-content a {
   color: var(--color-brand);
   text-decoration: underline;
-  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .rte-content {
   white-space: normal;
   max-width: 100%;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 .rte-content p {
   margin: 0 0 0.5em;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 .rte-content p:last-child { margin-bottom: 0; }
 .rte-content ul,
