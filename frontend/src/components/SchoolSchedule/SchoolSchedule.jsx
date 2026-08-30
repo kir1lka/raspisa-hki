@@ -55,8 +55,12 @@ export default function SchoolSchedule() {
   const [error, setError] = useState(null)
   const [form, setForm] = useState(null)
   const [timeEdit, setTimeEdit] = useState(null)
-  const [extraMorning, setExtraMorning] = useState(0)
-  const [extraAfternoon, setExtraAfternoon] = useState(0)
+  const [extraMorning, setExtraMorning] = useState(
+    () => Number(localStorage.getItem('school-m-row-adjustment')) || 0,
+  )
+  const [extraAfternoon, setExtraAfternoon] = useState(
+    () => Number(localStorage.getItem('school-a-row-adjustment')) || 0,
+  )
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(null)
   const [timeOverrides, setTimeOverrides] = useState({})
@@ -75,6 +79,8 @@ export default function SchoolSchedule() {
   useEffect(() => { localStorage.setItem('school-m-break', String(morningBreakMin)) }, [morningBreakMin])
   useEffect(() => { localStorage.setItem('school-a-lesson', String(afternoonLessonMin)) }, [afternoonLessonMin])
   useEffect(() => { localStorage.setItem('school-a-break', String(afternoonBreakMin)) }, [afternoonBreakMin])
+  useEffect(() => { localStorage.setItem('school-m-row-adjustment', String(extraMorning)) }, [extraMorning])
+  useEffect(() => { localStorage.setItem('school-a-row-adjustment', String(extraAfternoon)) }, [extraAfternoon])
 
   const sessionLesson = (s) => Number(s === 'morning' ? morningLessonMin : afternoonLessonMin) || 40
   const sessionBreak = (s) => Number(s === 'morning' ? morningBreakMin : afternoonBreakMin) || 0
@@ -338,8 +344,12 @@ export default function SchoolSchedule() {
     if (!afternoonOrders.length) {
       // Второй смены в расписании нет — границу держим сами, иначе строки
       // первой смены дальше пятой было бы не показать.
-      const morningRows = Math.max(maxM, 5) + extraMorning
-      return { morningRows, firstAfternoon: morningRows + 1, afternoonRows: 5 + extraAfternoon }
+      const morningRows = Math.max(maxM, 5 + extraMorning, 1)
+      return {
+        morningRows,
+        firstAfternoon: morningRows + 1,
+        afternoonRows: Math.max(5 + extraAfternoon, 1),
+      }
     }
 
     const minA = Math.min(...afternoonOrders)
@@ -349,7 +359,7 @@ export default function SchoolSchedule() {
     // второй смены съезжали на пятый номер и ниже — а таблица первой смены
     // всё равно растягивалась на пять строк и показывала их у себя.
     const morningRows = Math.max(minA - 1, 1)
-    const afternoonRows = Math.max(maxA - minA + 1, 5) + extraAfternoon
+    const afternoonRows = Math.max(maxA - minA + 1, 5 + extraAfternoon, 1)
     return { morningRows, firstAfternoon: morningRows + 1, afternoonRows }
   }, [lessons, isAfternoonLesson, extraMorning, extraAfternoon])
 
@@ -370,19 +380,45 @@ export default function SchoolSchedule() {
   function openCreate(dayKey, time, order) {
     const session = order <= layout.morningRows ? 'morning' : 'afternoon'
     const allowed = allowedGroupNumbers(session)
-    setForm({ id: null, dayOfWeek: dayKey, time, orderNumber: order, groupNumber: allowed[0] ?? '', studioCode: studioCodes[0] ?? 'ФВ', session })
+    setForm({
+      id: null,
+      dayOfWeek: dayKey,
+      time,
+      endTime: addMinutes(time, sessionLesson(session)),
+      orderNumber: order,
+      groupNumber: allowed[0] ?? '',
+      studioCode: studioCodes[0] ?? 'ФВ',
+      session,
+    })
   }
 
   function openEdit(l) {
     const session = (l.orderNumber ?? 1) <= layout.morningRows ? 'morning' : 'afternoon'
-    setForm({ id: l.id, dayOfWeek: l.dayOfWeek, time: hhmm(l.time), orderNumber: l.orderNumber ?? 1, groupNumber: l.groupNumber, studioCode: l.studioCode, session })
+    const time = hhmm(l.time)
+    setForm({
+      id: l.id,
+      dayOfWeek: l.dayOfWeek,
+      time,
+      endTime: addMinutes(time, sessionLesson(session)),
+      orderNumber: l.orderNumber ?? 1,
+      groupNumber: l.groupNumber,
+      studioCode: l.studioCode,
+      session,
+    })
   }
 
   async function moveLesson(lesson, targetDay, targetOrder, targetTime) {
     if (!lesson || (lesson.dayOfWeek === targetDay && lesson.orderNumber === targetOrder)) return
+    const targetSession = targetOrder <= layout.morningRows ? 'morning' : 'afternoon'
+    const targetEndTime = addMinutes(targetTime, sessionLesson(targetSession))
     setBusy(true)
     try {
-      await updateLesson(lesson.id, lessonPayload(lesson, { dayOfWeek: targetDay, orderNumber: targetOrder, time: `${targetTime}:00` }))
+      await updateLesson(lesson.id, lessonPayload(lesson, {
+        dayOfWeek: targetDay,
+        orderNumber: targetOrder,
+        time: `${targetTime}:00`,
+        endTime: `${targetEndTime}:00`,
+      }))
       toast?.success('Занятие перенесено')
       reload()
     } catch (e) {
@@ -433,16 +469,17 @@ export default function SchoolSchedule() {
     const inRow = lessons.filter((l) => l.orderNumber === order)
     const after = lessons.filter((l) => l.orderNumber > order)
     if (inRow.length === 0 && after.length === 0) {
-      if (session === 'afternoon') setExtraAfternoon((n) => Math.max(0, n - 1))
-      else setExtraMorning((n) => Math.max(0, n - 1))
+      if (session === 'afternoon') setExtraAfternoon((n) => n - 1)
+      else setExtraMorning((n) => n - 1)
+      toast?.success(`Строка №${order} удалена`)
       return
     }
     setBusy(true)
     try {
       await Promise.all(inRow.map((l) => deleteLesson(l.id)))
       await Promise.all(after.map((l) => updateLesson(l.id, lessonPayload(l, { orderNumber: l.orderNumber - 1 }))))
-      if (session === 'afternoon') setExtraAfternoon((n) => Math.max(0, n - 1))
-      else setExtraMorning((n) => Math.max(0, n - 1))
+      if (session === 'afternoon') setExtraAfternoon((n) => n - 1)
+      else setExtraMorning((n) => n - 1)
       toast?.success(`Строка №${order} удалена`)
       reload()
     } catch (e) {
@@ -492,7 +529,11 @@ export default function SchoolSchedule() {
       const start = addMinutes(newTime, (p - order) * step)
       const cell = lessons.filter((l) => l.dayOfWeek === day && l.orderNumber === p)
       if (cell.length) {
-        cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, { time: `${start}:00` }))))
+        const end = addMinutes(start, sessionLesson(session))
+        cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, {
+          time: `${start}:00`,
+          endTime: `${end}:00`,
+        }))))
       } else {
         overrides[`${day}-${p}`] = start
       }
@@ -524,7 +565,13 @@ export default function SchoolSchedule() {
       for (let p = firstOrder; p <= lastOrder; p++) {
         const start = addMinutes(anchor, (p - firstOrder) * step)
         const cell = lessons.filter((l) => l.dayOfWeek === day && l.orderNumber === p)
-        if (cell.length) cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, { time: `${start}:00` }))))
+        if (cell.length) {
+          const end = addMinutes(start, sessionLesson(session))
+          cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, {
+            time: `${start}:00`,
+            endTime: `${end}:00`,
+          }))))
+        }
         else overrides[`${day}-${p}`] = start
       }
     }
@@ -1193,6 +1240,8 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
       orderNumber: Number(form.orderNumber) || 1,
       groupNumber: Number(form.groupNumber),
       studioCode: form.studioCode,
+      special: false,
+      endTime: form.endTime.length === 5 ? `${form.endTime}:00` : form.endTime,
     }
     try {
       if (isEdit) await updateLesson(form.id, payload)

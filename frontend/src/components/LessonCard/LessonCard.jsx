@@ -1,4 +1,4 @@
-import { hhmm, endTime, isCurrentLesson, shortName } from '../../utils'
+import { hhmm, lessonEndTime, isCurrentLesson, shortName } from '../../utils'
 
 const toMinutes = (t) => {
   const [h, m] = t.split(':').map(Number)
@@ -8,7 +8,7 @@ const toMinutes = (t) => {
 /** Доля пройденного времени занятия, 0…1 — для полосы на карточке «идёт сейчас». */
 function progressOf(lesson, now = new Date()) {
   const start = toMinutes(lesson.time)
-  const finish = toMinutes(lesson.special && lesson.endTime ? lesson.endTime : endTime(lesson.time))
+  const finish = toMinutes(lessonEndTime(lesson))
   const cur = now.getHours() * 60 + now.getMinutes()
   if (finish <= start) return 0
   return Math.min(1, Math.max(0, (cur - start) / (finish - start)))
@@ -18,7 +18,7 @@ export default function LessonCard({ lesson, index = 0, byTeacher = false, highl
   // Крупный вид «идёт сейчас» — только для обычных занятий. Мероприятие
   // длится часами, и полоса прогресса на нём смысла не имеет.
   const current = highlightCurrent && !lesson.special && isCurrentLesson(lesson)
-  const finish = lesson.special && lesson.endTime ? hhmm(lesson.endTime) : endTime(lesson.time)
+  const finish = lessonEndTime(lesson)
 
   const title = lesson.special
     ? lesson.title || lesson.studioName

@@ -31,10 +31,14 @@ export function shortName(full) {
   return `${last} ${initials}`
 }
 
-export function endTime(t) {
+export function endTime(t, durationMinutes = 40) {
   const [h, m] = t.split(':').map(Number)
-  const total = h * 60 + m + 40
+  const total = h * 60 + m + durationMinutes
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+export function lessonEndTime(lesson) {
+  return lesson.endTime ? hhmm(lesson.endTime) : endTime(lesson.time)
 }
 
 const toMinutes = (t) => {
@@ -46,6 +50,7 @@ export function isCurrentLesson(lesson, now = new Date()) {
   const todayKey = DAY_ORDER[(now.getDay() + 6) % 7]
   if (lesson.dayOfWeek !== todayKey) return false
   const start = toMinutes(lesson.time)
+  const finish = toMinutes(lessonEndTime(lesson))
   const cur = now.getHours() * 60 + now.getMinutes()
-  return cur >= start && cur < start + 40
+  return cur >= start && cur < finish
 }
