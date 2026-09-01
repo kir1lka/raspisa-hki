@@ -11,6 +11,7 @@ import ru.raspisa.entity.Teacher;
 import ru.raspisa.repository.GroupRepository;
 import ru.raspisa.repository.LessonRepository;
 import ru.raspisa.repository.StudioRepository;
+import ru.raspisa.util.GroupNames;
 
 import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
@@ -41,8 +42,7 @@ public class LessonService {
         this.pushService = pushService;
     }
 
-    private static final Comparator<Integer> GROUP_NULLS_LAST =
-            Comparator.nullsLast(Comparator.naturalOrder());
+    private static final Comparator<String> GROUP_NULLS_LAST = GroupNames.COMPARATOR;
 
     public List<LessonDto> findAll() {
         return lessonRepository.findAll().stream()
@@ -61,9 +61,12 @@ public class LessonService {
                 .toList();
     }
 
-    public List<LessonDto> findByGroup(Integer groupNumber) {
+    public List<LessonDto> findByGroup(String groupNumber) {
+        Group group = groupRepository.findByNumber(GroupNames.normalize(groupNumber));
         Map<Long, Lesson> merged = new LinkedHashMap<>();
-        lessonRepository.findByGroup_Number(groupNumber).forEach(l -> merged.put(l.getId(), l));
+        if (group != null) {
+            lessonRepository.findByGroup(group).forEach(l -> merged.put(l.getId(), l));
+        }
         lessonRepository.findBySpecialTrue().forEach(l -> merged.put(l.getId(), l));
         return merged.values().stream()
                 .map(this::toDto)
@@ -147,7 +150,7 @@ public class LessonService {
 
         Group group = null;
         if (req.groupNumber() != null) {
-            group = groupRepository.findByNumber(req.groupNumber());
+            group = groupRepository.findByNumber(GroupNames.normalize(req.groupNumber()));
             if (group == null) {
                 throw new IllegalArgumentException("Группа не найдена: " + req.groupNumber());
             }

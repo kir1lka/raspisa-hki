@@ -10,7 +10,7 @@ public record LessonDto(
         DayOfWeek dayOfWeek,
         LocalTime time,
         Integer orderNumber,
-        Integer groupNumber,
+        String groupNumber,
         String studioCode,
         String studioName,
         String teacherName,

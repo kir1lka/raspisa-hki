@@ -7,6 +7,15 @@ export const DAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'
 
 export const hhmm = (t) => t.slice(0, 5)
 
+export const normalizeGroupNumber = (value) =>
+  String(value ?? '').trim().toLocaleUpperCase('ru-RU')
+
+export const compareGroupNumbers = (left, right) =>
+  normalizeGroupNumber(left).localeCompare(normalizeGroupNumber(right), 'ru', {
+    numeric: true,
+    sensitivity: 'base',
+  })
+
 export const MONTHS_SHORT_LOWER = [
   'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
   'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',

@@ -78,7 +78,12 @@ public class DataSeeder implements CommandLineRunner {
                 .toList();
         if (groups.isEmpty()) return;
         groups.forEach(g -> {
-            int n = g.getNumber() == null ? 0 : g.getNumber();
+            int n;
+            try {
+                n = Integer.parseInt(g.getNumber());
+            } catch (Exception ignored) {
+                n = 0;
+            }
             g.setShift(n <= 5 ? Shift.MORNING : Shift.AFTERNOON);
         });
         groupRepository.saveAll(groups);
@@ -186,7 +191,7 @@ public class DataSeeder implements CommandLineRunner {
                 DayOfWeek day = DayOfWeek.valueOf(f[0].trim());
                 LocalTime time = LocalTime.parse(f[1].trim());
                 int order = Integer.parseInt(f[2].trim());
-                int groupNumber = Integer.parseInt(f[3].trim());
+                String groupNumber = f[3].trim();
                 String studioCode = f[4].trim();
 
                 Group group = groupRepository.findByNumber(groupNumber);
@@ -254,7 +259,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private Group saveGroup(int number, Teacher curator) {
         Group g = new Group();
-        g.setNumber(number);
+        g.setNumber(String.valueOf(number));
         g.setCurator(curator);
         return groupRepository.save(g);
     }

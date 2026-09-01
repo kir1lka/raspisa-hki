@@ -71,7 +71,7 @@ export default function DashboardPage() {
             onQueryChange={setQuery}
             groups={groups}
             teachers={teachers}
-            onSelectGroup={(n) => navigate(`/dashboard/group/${n}`)}
+            onSelectGroup={(n) => navigate(`/dashboard/group/${encodeURIComponent(n)}`)}
             onSelectTeacher={(id) => navigate(`/dashboard/teacher/${id}`)}
           />
         </div>

@@ -190,7 +190,7 @@ export default function SchedulePage({ base = '', embedded = false, selection: s
             onQueryChange={setQuery}
             groups={groups}
             teachers={teachers}
-            onSelectGroup={(n) => navigate(`${base}/group/${n}`)}
+            onSelectGroup={(n) => navigate(`${base}/group/${encodeURIComponent(n)}`)}
             onSelectTeacher={(id) => navigate(`${base}/teacher/${id}`)}
           />
 

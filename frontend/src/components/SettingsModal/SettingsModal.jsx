@@ -6,7 +6,7 @@ import { getUser, clearUser } from '../../auth'
 import { useBodyScrollLock } from '../../useBodyScrollLock'
 import { enablePush, getPushState } from '../../push'
 import { getDefaultSelection, setDefaultSelection } from '../../defaultSelection'
-import { shortName } from '../../utils'
+import { normalizeGroupNumber, shortName } from '../../utils'
 
 // showTheme: на публичных страницах тема переключается кнопкой в шапке,
 // и дублировать её здесь незачем. В админ-панели шапки нет — там строка нужна.
@@ -34,22 +34,17 @@ export default function SettingsModal({ open, onClose, theme, onToggleTheme, zoo
   }, [open])
 
   const pq = pickQuery.trim()
-  const pickHasLetters = /[A-Za-zА-Яа-яЁё]/.test(pq)
   let pickSuggestions = []
   if (pq) {
-    if (pickHasLetters) {
-      const lq = pq.toLowerCase()
-      pickSuggestions = teachers
-        .filter((t) => t.fullName.toLowerCase().includes(lq))
-        .slice(0, 8)
-        .map((t) => ({ key: `t${t.id}`, icon: User, label: t.fullName, sel: { type: 'teacher', value: t.id, label: t.fullName } }))
-    } else {
-      const digits = pq.replace(/\D/g, '')
-      pickSuggestions = groups
-        .filter((n) => digits === '' || String(n).startsWith(digits))
-        .slice(0, 8)
-        .map((n) => ({ key: `g${n}`, icon: Users, label: `${n} группа`, sel: { type: 'group', value: n, label: `${n} группа` } }))
-    }
+    const groupQuery = normalizeGroupNumber(pq.replace(/\s+групп[аы]?$/iu, ''))
+    const lq = pq.toLocaleLowerCase('ru-RU')
+    const groupItems = groups
+      .filter((number) => normalizeGroupNumber(number).includes(groupQuery))
+      .map((number) => ({ key: `g${number}`, icon: Users, label: `${number} группа`, sel: { type: 'group', value: number, label: `${number} группа` } }))
+    const teacherItems = teachers
+      .filter((t) => t.fullName.toLocaleLowerCase('ru-RU').includes(lq))
+      .map((t) => ({ key: `t${t.id}`, icon: User, label: t.fullName, sel: { type: 'teacher', value: t.id, label: t.fullName } }))
+    pickSuggestions = [...groupItems, ...teacherItems].slice(0, 8)
   }
 
   function chooseDefault(sel) {

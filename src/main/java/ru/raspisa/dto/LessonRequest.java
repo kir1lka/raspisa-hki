@@ -3,6 +3,8 @@ package ru.raspisa.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -18,7 +20,9 @@ public record LessonRequest(
         @Min(value = 1, message = "номер занятия должен быть >= 1")
         Integer orderNumber,
 
-        Integer groupNumber,
+        @Size(max = 32, message = "название группы должно быть не длиннее 32 символов")
+        @Pattern(regexp = ru.raspisa.util.GroupNames.PATTERN, message = "используйте буквы, цифры и дефис")
+        String groupNumber,
 
         @NotBlank(message = "код студии обязателен")
         String studioCode,

@@ -1,5 +1,5 @@
 export async function fetchGroupLessons(groupNumber) {
-  const res = await fetch(`/api/lessons?group=${groupNumber}`)
+  const res = await fetch(`/api/lessons?group=${encodeURIComponent(groupNumber)}`)
   if (!res.ok) throw new Error('Ошибка загрузки расписания')
   return res.json()
 }

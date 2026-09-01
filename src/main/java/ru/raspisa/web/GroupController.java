@@ -8,8 +8,8 @@ import ru.raspisa.dto.GroupRequest;
 import ru.raspisa.entity.Group;
 import ru.raspisa.repository.GroupRepository;
 import ru.raspisa.service.GroupService;
+import ru.raspisa.util.GroupNames;
 
-import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -25,10 +25,10 @@ public class GroupController {
     }
 
     @GetMapping
-    public List<Integer> numbers() {
+    public List<String> numbers() {
         return groupRepository.findAll().stream()
                 .map(Group::getNumber)
-                .sorted(Comparator.naturalOrder())
+                .sorted(GroupNames.COMPARATOR)
                 .toList();
     }
 

@@ -20,7 +20,8 @@ export function setDefaultSelection(sel) {
 // Путь к расписанию сохранённого выбора, например '/group/101' или '/teacher/5'.
 export function defaultSelectionPath(sel, base = '') {
   if (!sel) return null
-  return sel.type === 'teacher' ? `${base}/teacher/${sel.value}` : `${base}/group/${sel.value}`
+  const value = encodeURIComponent(sel.value)
+  return sel.type === 'teacher' ? `${base}/teacher/${value}` : `${base}/group/${value}`
 }
 
 // Последнее открытое расписание. Нужно, чтобы после ухода на «Студии»

@@ -5,6 +5,7 @@ import { fetchAllLessons, fetchGroupsList, createLesson, updateLesson, deleteLes
 import ConfirmModal from './ConfirmModal'
 import { useToast } from '../Toast/Toast'
 import { useBodyScrollLock } from '../../useBodyScrollLock'
+import { compareGroupNumbers, normalizeGroupNumber } from '../../utils'
 
 function fmtDateShort(s) {
   if (!s) return ''
@@ -147,7 +148,7 @@ export default function SchoolSchedule() {
     const cellList = (day, order) =>
       lessons
         .filter((l) => !l.special && l.dayOfWeek === day && l.orderNumber === order)
-        .sort((a, b) => (a.groupNumber ?? 0) - (b.groupNumber ?? 0))
+        .sort((a, b) => compareGroupNumbers(a.groupNumber, b.groupNumber))
 
     const cellText = (day, order) => {
       const list = cellList(day, order)
@@ -251,7 +252,7 @@ export default function SchoolSchedule() {
     sumTitle('Группы')
     gridRow([['Группа', 1, 2], ['Занятий в неделю', 3, 5], ['Смена', 6, NCOLS]], { bold: true, h: 22 })
     Object.keys(byGroup)
-      .sort((a, b) => Number(a) - Number(b))
+      .sort(compareGroupNumbers)
       .forEach((num) => {
         const g = byGroup[num]
         gridRow([[`${num} группа`, 1, 2], [g.count, 3, 5], [shiftLabel(g.shifts), 6, NCOLS]])
@@ -298,8 +299,8 @@ export default function SchoolSchedule() {
   }, [lessons])
 
   const groupNumbers = useMemo(() => {
-    if (groups.length) return groups.map((g) => g.number).sort((a, b) => a - b)
-    return [...new Set(lessons.map((l) => l.groupNumber).filter(Boolean))].sort((a, b) => a - b)
+    if (groups.length) return groups.map((g) => g.number).sort(compareGroupNumbers)
+    return [...new Set(lessons.map((l) => l.groupNumber).filter(Boolean))].sort(compareGroupNumbers)
   }, [groups, lessons])
 
   function allowedGroupNumbers(session) {
@@ -308,7 +309,7 @@ export default function SchoolSchedule() {
     return groups
       .filter((g) => (g.shift || 'MORNING') === want)
       .map((g) => g.number)
-      .sort((a, b) => a - b)
+      .sort(compareGroupNumbers)
   }
 
   /**
@@ -326,12 +327,15 @@ export default function SchoolSchedule() {
    */
   const groupShift = useMemo(() => {
     const map = new Map()
-    groups.forEach((g) => map.set(g.number, g.shift || 'MORNING'))
+    groups.forEach((g) => map.set(normalizeGroupNumber(g.number), g.shift || 'MORNING'))
     return map
   }, [groups])
 
   const isAfternoonLesson = useCallback(
-    (l) => (groupShift.has(l.groupNumber) ? groupShift.get(l.groupNumber) === 'AFTERNOON' : hhmm(l.time) >= '14:00'),
+    (l) => {
+      const groupNumber = normalizeGroupNumber(l.groupNumber)
+      return groupShift.has(groupNumber) ? groupShift.get(groupNumber) === 'AFTERNOON' : hhmm(l.time) >= '14:00'
+    },
     [groupShift],
   )
 
@@ -366,14 +370,16 @@ export default function SchoolSchedule() {
   function cellLessons(dayKey, order) {
     return lessons
       .filter((l) => l.dayOfWeek === dayKey && l.orderNumber === order)
-      .sort((a, b) => (a.groupNumber ?? -1) - (b.groupNumber ?? -1))
+      .sort((a, b) => compareGroupNumbers(a.groupNumber, b.groupNumber))
   }
 
   function modalGroupNumbers(form) {
     if (!form) return groupNumbers
     const base = form.session ? allowedGroupNumbers(form.session) : groupNumbers
-    const cur = form.groupNumber != null && form.groupNumber !== '' ? Number(form.groupNumber) : null
-    if (cur != null && !base.includes(cur)) return [...base, cur].sort((a, b) => a - b)
+    const cur = form.groupNumber != null && form.groupNumber !== '' ? String(form.groupNumber) : null
+    if (cur != null && !base.some((number) => normalizeGroupNumber(number) === normalizeGroupNumber(cur))) {
+      return [...base, cur].sort(compareGroupNumbers)
+    }
     return base
   }
 
@@ -618,7 +624,7 @@ export default function SchoolSchedule() {
   }
 
   async function addGroup(number, shift) {
-    await createGroup({ number: Number(number), shift })
+    await createGroup({ number: normalizeGroupNumber(number), shift })
     toast?.success(`Группа ${number} добавлена`)
     reloadGroups()
   }
@@ -695,7 +701,7 @@ export default function SchoolSchedule() {
               <GripVertical className="size-6 shrink-0 cursor-grab text-muted/50" title="Перетащить" />
             )}
             {l.groupNumber != null ? (
-              <span className="w-8 shrink-0 text-center text-2xl font-bold text-ink">{l.groupNumber}</span>
+              <span className="min-w-8 shrink-0 text-center text-2xl font-bold text-ink">{l.groupNumber}</span>
             ) : (
               <span className="shrink-0 text-base font-semibold text-brand">все</span>
             )}
@@ -913,6 +919,7 @@ export default function SchoolSchedule() {
 }
 
 function GroupShiftTable({ groups, onChangeShift, onAdd, onDelete }) {
+  const toast = useToast()
   const [newNumber, setNewNumber] = useState('')
   const [newShift, setNewShift] = useState('MORNING')
   const [adding, setAdding] = useState(false)
@@ -927,8 +934,8 @@ function GroupShiftTable({ groups, onChangeShift, onAdd, onDelete }) {
     try {
       await onAdd(newNumber, newShift)
       setNewNumber('')
-    } catch {
-
+    } catch (error) {
+      toast?.error(error.message)
     } finally {
       setAdding(false)
     }
@@ -984,12 +991,15 @@ function GroupShiftTable({ groups, onChangeShift, onAdd, onDelete }) {
             <td colSpan={3} className="border border-line p-3">
               <form onSubmit={submitAdd} className="flex flex-wrap items-center gap-3">
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  maxLength={32}
+                  pattern="[A-Za-zА-Яа-яЁё0-9]+(?:-[A-Za-zА-Яа-яЁё0-9]+)*"
+                  autoComplete="off"
                   value={newNumber}
                   onChange={(e) => setNewNumber(e.target.value)}
-                  placeholder="№ группы"
-                  className="h-12 w-32 rounded-card border-2 border-line bg-surface px-3 text-lg text-ink outline-none focus:border-brand"
+                  placeholder="7 или ВР-1"
+                  title="Буквы, цифры и дефис"
+                  className="h-12 w-40 rounded-card border-2 border-line bg-surface px-3 text-lg text-ink outline-none focus:border-brand"
                 />
                 <select value={newShift} onChange={(e) => setNewShift(e.target.value)} className={select}>
                   {SHIFTS.map((s) => (<option key={s.key} value={s.key}>{s.label}</option>))}
@@ -1020,18 +1030,18 @@ function GroupSummaryTable({ groups, lessons, isAfternoonLesson }) {
 
     lessons.forEach((lesson) => {
       if (lesson.special || lesson.groupNumber == null) return
-      const number = Number(lesson.groupNumber)
+      const number = normalizeGroupNumber(lesson.groupNumber)
       counts.set(number, (counts.get(number) || 0) + 1)
       const shifts = lessonShifts.get(number) || new Set()
       shifts.add(isAfternoonLesson(lesson) ? 'AFTERNOON' : 'MORNING')
       lessonShifts.set(number, shifts)
     })
 
-    const configured = new Map(groups.map((group) => [Number(group.number), group.shift || 'MORNING']))
+    const configured = new Map(groups.map((group) => [normalizeGroupNumber(group.number), group.shift || 'MORNING']))
     const numbers = new Set([...configured.keys(), ...counts.keys()])
 
     return [...numbers]
-      .sort((a, b) => a - b)
+      .sort(compareGroupNumbers)
       .map((number) => {
         const configuredShift = configured.get(number)
         const shifts = lessonShifts.get(number) || new Set()
@@ -1238,7 +1248,7 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
       dayOfWeek: form.dayOfWeek,
       time: form.time.length === 5 ? `${form.time}:00` : form.time,
       orderNumber: Number(form.orderNumber) || 1,
-      groupNumber: Number(form.groupNumber),
+      groupNumber: normalizeGroupNumber(form.groupNumber),
       studioCode: form.studioCode,
       special: false,
       endTime: form.endTime.length === 5 ? `${form.endTime}:00` : form.endTime,

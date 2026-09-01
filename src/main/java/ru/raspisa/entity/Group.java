@@ -12,7 +12,13 @@ public class Group {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Integer number;
+    // Старый числовой столбец сохраняем для совместимости с уже заполненной БД.
+    // Новые и отредактированные названия хранятся в строковом столбце code.
+    @Column(name = "number")
+    private Integer legacyNumber;
+
+    @Column(name = "code", length = 32)
+    private String code;
 
     @Enumerated(EnumType.STRING)
     private Shift shift = Shift.MORNING;
@@ -27,8 +33,15 @@ public class Group {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Integer getNumber() { return number; }
-    public void setNumber(Integer number) { this.number = number; }
+    public String getNumber() {
+        if (code != null && !code.isBlank()) return code;
+        return legacyNumber == null ? null : String.valueOf(legacyNumber);
+    }
+
+    public void setNumber(String number) { this.code = number; }
+
+    public Integer getLegacyNumber() { return legacyNumber; }
+    public void setLegacyNumber(Integer legacyNumber) { this.legacyNumber = legacyNumber; }
 
     public Shift getShift() { return shift; }
     public void setShift(Shift shift) { this.shift = shift; }

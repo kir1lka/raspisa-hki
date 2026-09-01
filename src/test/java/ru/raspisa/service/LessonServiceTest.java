@@ -34,10 +34,11 @@ class LessonServiceTest {
     @Mock LessonRepository lessonRepository;
     @Mock GroupRepository groupRepository;
     @Mock StudioRepository studioRepository;
+    @Mock PushService pushService;
 
     @InjectMocks LessonService service;
 
-    private Lesson lesson(Long id, DayOfWeek day, LocalTime time, Integer groupNumber,
+    private Lesson lesson(Long id, DayOfWeek day, LocalTime time, String groupNumber,
                           String code, String studioName, String teacherName) {
         Teacher teacher = new Teacher();
         teacher.setFullName(teacherName);
@@ -59,7 +60,7 @@ class LessonServiceTest {
         return lesson;
     }
 
-    private LessonRequest request(Integer groupNumber, String studioCode) {
+    private LessonRequest request(String groupNumber, String studioCode) {
         return new LessonRequest(DayOfWeek.MONDAY, LocalTime.of(9, 0), 1, groupNumber, studioCode,
                 false, null, null, null, null, null);
     }
@@ -67,14 +68,14 @@ class LessonServiceTest {
     @Test
     void findById_mapsTeacherViaStudio() {
         when(lessonRepository.findById(1L))
-                .thenReturn(Optional.of(lesson(1L, DayOfWeek.MONDAY, LocalTime.of(9, 0), 3, "ФВ", "Фото", "Иванов")));
+                .thenReturn(Optional.of(lesson(1L, DayOfWeek.MONDAY, LocalTime.of(9, 0), "ВР-1", "ФВ", "Фото", "Иванов")));
 
         LessonDto dto = service.findById(1L);
 
         assertThat(dto.teacherName()).isEqualTo("Иванов");
         assertThat(dto.studioName()).isEqualTo("Фото");
         assertThat(dto.studioCode()).isEqualTo("ФВ");
-        assertThat(dto.groupNumber()).isEqualTo(3);
+        assertThat(dto.groupNumber()).isEqualTo("ВР-1");
     }
 
     @Test
@@ -87,15 +88,17 @@ class LessonServiceTest {
 
     @Test
     void findByGroup_mergesSpecialEventsAndSortsByDayThenTime() {
-        Lesson mon = lesson(1L, DayOfWeek.MONDAY, LocalTime.of(10, 0), 3, "ФВ", "Фото", "И");
-        Lesson tue = lesson(2L, DayOfWeek.TUESDAY, LocalTime.of(9, 0), 3, "ДЗ", "Диз", "П");
+        Lesson mon = lesson(1L, DayOfWeek.MONDAY, LocalTime.of(10, 0), "ВР-1", "ФВ", "Фото", "И");
+        Lesson tue = lesson(2L, DayOfWeek.TUESDAY, LocalTime.of(9, 0), "ВР-1", "ДЗ", "Диз", "П");
         Lesson special = lesson(3L, DayOfWeek.MONDAY, LocalTime.of(8, 0), null, "ВР", "VR", "С");
         special.setSpecial(true);
 
-        when(lessonRepository.findByGroup_Number(3)).thenReturn(List.of(mon, tue));
+        Group group = mon.getGroup();
+        when(groupRepository.findByNumber("ВР-1")).thenReturn(group);
+        when(lessonRepository.findByGroup(group)).thenReturn(List.of(mon, tue));
         when(lessonRepository.findBySpecialTrue()).thenReturn(List.of(special));
 
-        List<LessonDto> result = service.findByGroup(3);
+        List<LessonDto> result = service.findByGroup("ВР-1");
 
         // Пн 08:00 (мероприятие) -> Пн 10:00 -> Вт 09:00
         assertThat(result).extracting(LessonDto::id).containsExactly(3L, 1L, 2L);
@@ -110,9 +113,9 @@ class LessonServiceTest {
         studio.setName("Фото");
         studio.setTeacher(teacher);
         Group group = new Group();
-        group.setNumber(3);
+        group.setNumber("ВР-1");
 
-        when(groupRepository.findByNumber(3)).thenReturn(group);
+        when(groupRepository.findByNumber("ВР-1")).thenReturn(group);
         when(studioRepository.findByCode("ФВ")).thenReturn(studio);
         when(lessonRepository.save(any(Lesson.class))).thenAnswer(inv -> {
             Lesson saved = inv.getArgument(0);
@@ -120,19 +123,19 @@ class LessonServiceTest {
             return saved;
         });
 
-        LessonDto dto = service.create(request(3, "ФВ"));
+        LessonDto dto = service.create(request("вр-1", "ФВ"));
 
         assertThat(dto.id()).isEqualTo(10L);
         assertThat(dto.studioCode()).isEqualTo("ФВ");
         assertThat(dto.teacherName()).isEqualTo("Иванов");
-        assertThat(dto.groupNumber()).isEqualTo(3);
+        assertThat(dto.groupNumber()).isEqualTo("ВР-1");
     }
 
     @Test
     void create_groupNotFound_throwsAndDoesNotSave() {
-        when(groupRepository.findByNumber(99)).thenReturn(null);
+        when(groupRepository.findByNumber("99")).thenReturn(null);
 
-        assertThatThrownBy(() -> service.create(request(99, "ФВ")))
+        assertThatThrownBy(() -> service.create(request("99", "ФВ")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Группа");
 
@@ -141,10 +144,10 @@ class LessonServiceTest {
 
     @Test
     void create_studioNotFound_throws() {
-        when(groupRepository.findByNumber(3)).thenReturn(new Group());
+        when(groupRepository.findByNumber("3")).thenReturn(new Group());
         when(studioRepository.findByCode("XX")).thenReturn(null);
 
-        assertThatThrownBy(() -> service.create(request(3, "XX")))
+        assertThatThrownBy(() -> service.create(request("3", "XX")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Студия");
     }

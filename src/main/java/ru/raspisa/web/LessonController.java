@@ -23,7 +23,7 @@ public class LessonController {
 
     @GetMapping
     public List<LessonDto> list(@RequestParam(required = false) DayOfWeek day,
-                                @RequestParam(required = false) Integer group,
+                                @RequestParam(required = false) String group,
                                 @RequestParam(required = false) Long teacher) {
         if (teacher != null) return lessonService.findByTeacher(teacher);
         if (group != null) return lessonService.findByGroup(group);

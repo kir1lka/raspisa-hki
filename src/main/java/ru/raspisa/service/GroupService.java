@@ -7,6 +7,7 @@ import ru.raspisa.dto.GroupRequest;
 import ru.raspisa.entity.Group;
 import ru.raspisa.entity.Shift;
 import ru.raspisa.repository.GroupRepository;
+import ru.raspisa.util.GroupNames;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,18 +24,19 @@ public class GroupService {
     @Transactional(readOnly = true)
     public List<GroupDto> list() {
         return repo.findAll().stream()
-                .sorted(Comparator.comparing(g -> g.getNumber() == null ? 0 : g.getNumber()))
+                .sorted(Comparator.comparing(Group::getNumber, GroupNames.COMPARATOR))
                 .map(GroupDto::from)
                 .toList();
     }
 
     @Transactional
     public GroupDto create(GroupRequest req) {
-        if (repo.findByNumber(req.number()) != null) {
-            throw new IllegalArgumentException("Группа " + req.number() + " уже существует");
+        String number = GroupNames.normalize(req.number());
+        if (repo.findByNumber(number) != null) {
+            throw new IllegalArgumentException("Группа " + number + " уже существует");
         }
         Group g = new Group();
-        g.setNumber(req.number());
+        g.setNumber(number);
         g.setShift(parseShift(req.shift()));
         return GroupDto.from(repo.save(g));
     }
@@ -42,11 +44,12 @@ public class GroupService {
     @Transactional
     public GroupDto update(Long id, GroupRequest req) {
         Group g = repo.findById(id).orElseThrow();
-        Group other = repo.findByNumber(req.number());
+        String number = GroupNames.normalize(req.number());
+        Group other = repo.findByNumber(number);
         if (other != null && !other.getId().equals(id)) {
-            throw new IllegalArgumentException("Группа " + req.number() + " уже существует");
+            throw new IllegalArgumentException("Группа " + number + " уже существует");
         }
-        g.setNumber(req.number());
+        g.setNumber(number);
         g.setShift(parseShift(req.shift()));
         return GroupDto.from(repo.save(g));
     }

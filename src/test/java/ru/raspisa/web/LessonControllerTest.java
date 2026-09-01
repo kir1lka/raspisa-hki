@@ -33,17 +33,18 @@ class LessonControllerTest {
                 .build();
     }
 
-    private LessonDto sample(long id, Integer group, String code, String studio, String teacher) {
+    private LessonDto sample(long id, String group, String code, String studio, String teacher) {
         return new LessonDto(id, DayOfWeek.MONDAY, LocalTime.of(9, 0), 1, group, code, studio, teacher,
                 false, null, null, null, null, List.of());
     }
 
     @Test
     void getByGroup_returnsJson() throws Exception {
-        when(lessonService.findByGroup(3)).thenReturn(List.of(sample(1, 3, "ФВ", "Фото", "Иванов")));
+        when(lessonService.findByGroup("ВР-1")).thenReturn(List.of(sample(1, "ВР-1", "ФВ", "Фото", "Иванов")));
 
-        mvc.perform(get("/api/lessons").param("group", "3"))
+        mvc.perform(get("/api/lessons").param("group", "ВР-1"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].groupNumber").value("ВР-1"))
                 .andExpect(jsonPath("$[0].studioName").value("Фото"))
                 .andExpect(jsonPath("$[0].teacherName").value("Иванов"));
     }
@@ -68,8 +69,8 @@ class LessonControllerTest {
 
     @Test
     void create_validBody_returns201() throws Exception {
-        when(lessonService.create(any())).thenReturn(sample(10, 3, "ФВ", "Фото", "Иванов"));
-        String body = "{\"dayOfWeek\":\"MONDAY\",\"time\":\"09:00\",\"orderNumber\":1,\"groupNumber\":3,\"studioCode\":\"ФВ\"}";
+        when(lessonService.create(any())).thenReturn(sample(10, "ВР-1", "ФВ", "Фото", "Иванов"));
+        String body = "{\"dayOfWeek\":\"MONDAY\",\"time\":\"09:00\",\"orderNumber\":1,\"groupNumber\":\"ВР-1\",\"studioCode\":\"ФВ\"}";
 
         mvc.perform(post("/api/lessons").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())

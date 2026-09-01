@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search, Settings, X, Users, User } from 'lucide-react'
+import { normalizeGroupNumber } from '../../utils'
 
 export default function SearchBar({
   query,
@@ -13,32 +14,31 @@ export default function SearchBar({
   const [open, setOpen] = useState(false)
 
   const q = String(query).trim()
-  const hasLetters = /[A-Za-zА-Яа-яЁё]/.test(q)
+  const groupQuery = q.replace(/\s+групп[аы]?$/iu, '').trim()
+  const normalizedGroupQuery = normalizeGroupNumber(groupQuery)
+  const lowerQuery = q.toLocaleLowerCase('ru-RU')
 
-  let suggestions = []
-  if (hasLetters) {
-    const lq = q.toLowerCase()
-    suggestions = teachers
-      .filter((t) => t.fullName.toLowerCase().includes(lq))
-      .slice(0, 13)
+  const groupSuggestions = groups
+    .filter((number) => !normalizedGroupQuery || normalizeGroupNumber(number).includes(normalizedGroupQuery))
+    .map((number) => ({
+      key: `g${number}`,
+      icon: Users,
+      label: `${number} группа`,
+      run: () => onSelectGroup?.(number),
+    }))
+
+  const teacherSuggestions = q
+    ? teachers
+      .filter((t) => t.fullName.toLocaleLowerCase('ru-RU').includes(lowerQuery))
       .map((t) => ({
         key: `t${t.id}`,
         icon: User,
         label: t.fullName,
         run: () => onSelectTeacher?.(t.id),
       }))
-  } else {
-    const digits = q.replace(/\D/g, '')
-    suggestions = groups
-      .filter((n) => digits === '' || String(n).startsWith(digits))
-      .slice(0, 13)
-      .map((n) => ({
-        key: `g${n}`,
-        icon: Users,
-        label: `${n} группа`,
-        run: () => onSelectGroup?.(n),
-      }))
-  }
+    : []
+
+  const suggestions = [...groupSuggestions, ...teacherSuggestions].slice(0, 13)
   const showList = open && suggestions.length > 0
 
   const iconBtn =
@@ -52,9 +52,11 @@ export default function SearchBar({
   function handleSubmit(e) {
     e.preventDefault()
     setOpen(false)
-    if (!hasLetters) {
-      const n = parseInt(q, 10)
-      if (n) onSelectGroup?.(n)
+    const exactGroup = groups.find(
+      (number) => normalizeGroupNumber(number) === normalizedGroupQuery,
+    )
+    if (exactGroup != null) {
+      onSelectGroup?.(exactGroup)
     } else if (suggestions.length === 1) {
       suggestions[0].run()
     }
