@@ -1,0 +1,479 @@
+html.map-mode,
+html.map-mode body {
+  min-height: 100%;
+  background: #fbfcfe;
+  color: #0a2456;
+}
+
+html.map-mode body::before,
+html.map-mode body::after {
+  display: none;
+}
+
+.district-map {
+  --map-blue: #0a2456;
+  --map-green: #08763c;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #fbfcfe;
+  color: var(--map-blue);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.district-map__header {
+  position: relative;
+  display: flex;
+  min-height: 250px;
+  align-items: center;
+  padding: clamp(38px, 7vw, 92px) clamp(26px, 6vw, 82px) 22px;
+}
+
+.district-map__header h1 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  max-width: 900px;
+  font-size: 68px;
+  line-height: 1.03;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+.district-map__header h1 span,
+.district-map__header h1 strong {
+  display: block;
+}
+
+.district-map__header h1 strong {
+  margin-top: 10px;
+  color: var(--map-green);
+  font-weight: 800;
+}
+
+.district-map__landscape {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(36vw, 520px);
+  height: auto;
+}
+
+.district-map__sky { fill: #e3f1fb; }
+.district-map__hill-back { fill: #acd961; }
+.district-map__hill-front { fill: #7ec943; }
+.district-map__trees { fill: #078246; }
+.district-map__chapel { fill: #fff4ce; stroke: #1d5a99; stroke-width: 5; stroke-linejoin: round; }
+.district-map__clouds { fill: #fff; opacity: 0.9; }
+
+.district-map__canvas {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  padding: 0 clamp(18px, 4vw, 58px) 20px;
+}
+
+.district-map__stage {
+  position: relative;
+  width: min(80vw, 980px);
+}
+
+.district-map__outline {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.district-map__region {
+  fill: #f6faef;
+  stroke: #e41318;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.district-map__divider {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 18 16;
+}
+
+.district-map__center-dot {
+  fill: #fff;
+  stroke: var(--map-green);
+  stroke-width: 6;
+}
+
+.district-map__point {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--map-blue);
+  font: inherit;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.district-map__point-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--map-green);
+  color: #fff;
+  box-shadow: 0 8px 22px rgb(10 36 86 / 22%);
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.district-map__point-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.district-map__point-label {
+  padding: 6px 10px;
+  border: 1px solid #d8e2ea;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 5px 14px rgb(10 36 86 / 10%);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.district-map__point:hover .district-map__point-icon,
+.district-map__point:focus-visible .district-map__point-icon {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgb(10 36 86 / 30%);
+}
+
+.district-map__point:focus-visible {
+  outline: 3px solid #68a9ff;
+  outline-offset: 5px;
+}
+
+.district-map__point.is-active .district-map__point-icon {
+  background: #e41318;
+  animation: map-point-pulse 1.7s ease-out infinite;
+}
+
+.district-map__footer {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 clamp(20px, 4vw, 52px) 24px;
+  padding: 14px 20px 14px 32px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: rgb(250 252 255 / 92%);
+  box-shadow: 0 10px 30px rgb(25 58 104 / 8%);
+}
+
+.district-map__footer p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.district-map__footer nav {
+  display: flex;
+  gap: 14px;
+}
+
+.district-map__footer a {
+  display: flex;
+  min-width: 128px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 7px;
+  color: var(--map-blue);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 700;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.district-map__footer a:hover {
+  border-color: #91a9c4;
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.district-map__vk {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 7px;
+  background: #087af0;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.district-map__max {
+  width: 31px;
+  height: 31px;
+  border: 7px solid #3131e8;
+  border-top-color: #06cbe0;
+  border-radius: 50%;
+}
+
+.district-map__player {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  width: min(calc(100% - 36px), 760px);
+  min-height: 78px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid #d3dee8;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 18px 46px rgb(10 36 86 / 24%);
+  transform: translateX(-50%);
+}
+
+.district-map__playing-mark {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 50%;
+  background: #e8f4ec;
+}
+
+.district-map__playing-mark span {
+  width: 3px;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--map-green);
+}
+
+.district-map__playing-mark.is-playing span {
+  animation: map-sound-bar 760ms ease-in-out infinite alternate;
+}
+
+.district-map__playing-mark.is-playing span:nth-child(2) {
+  animation-delay: 180ms;
+}
+
+.district-map__playing-mark.is-playing span:nth-child(3) {
+  animation-delay: 360ms;
+}
+
+.district-map__track {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.district-map__track strong,
+.district-map__track span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.district-map__track strong {
+  font-size: 16px;
+}
+
+.district-map__track span {
+  color: #64758b;
+  font-size: 13px;
+}
+
+.district-map__control {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #d3dee8;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--map-blue);
+  cursor: pointer;
+}
+
+.district-map__control svg {
+  width: 20px;
+  height: 20px;
+}
+
+.district-map__control:hover,
+.district-map__control:focus-visible {
+  border-color: var(--map-green);
+  color: var(--map-green);
+}
+
+.district-map__volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.district-map__volume svg {
+  width: 20px;
+  height: 20px;
+}
+
+.district-map__volume input {
+  width: 96px;
+  accent-color: var(--map-green);
+}
+
+.district-map .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@keyframes map-point-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(228 19 24 / 26%), 0 8px 22px rgb(10 36 86 / 22%); }
+  50% { box-shadow: 0 0 0 12px rgb(228 19 24 / 0%), 0 8px 22px rgb(10 36 86 / 22%); }
+}
+
+@keyframes map-sound-bar {
+  from { height: 7px; }
+  to { height: 22px; }
+}
+
+@media (max-width: 1200px) {
+  .district-map__header h1 {
+    max-width: 68%;
+    font-size: 58px;
+  }
+}
+
+@media (max-width: 760px) {
+  .district-map__header {
+    min-height: 300px;
+    align-items: flex-end;
+    padding: 32px 22px 24px;
+  }
+
+  .district-map__header h1 {
+    max-width: 92%;
+    font-size: 42px;
+  }
+
+  .district-map__landscape {
+    width: min(76vw, 390px);
+    opacity: 0.9;
+  }
+
+  .district-map__outline {
+    width: 100%;
+  }
+
+  .district-map__stage {
+    width: 100%;
+  }
+
+  .district-map__point {
+    gap: 5px;
+  }
+
+  .district-map__point-icon {
+    width: 44px;
+    height: 44px;
+    border-width: 2px;
+  }
+
+  .district-map__point-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .district-map__point-label {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .district-map__footer {
+    min-height: 0;
+    align-items: stretch;
+    flex-direction: column;
+    margin: 0 14px 14px;
+    padding: 16px;
+  }
+
+  .district-map__footer p {
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .district-map__footer nav {
+    width: 100%;
+  }
+
+  .district-map__footer a {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .district-map__player {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: calc(100% - 20px);
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .district-map__playing-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .district-map__volume {
+    display: none;
+  }
+}
+
+@media (max-width: 460px) {
+  .district-map__header {
+    min-height: 240px;
+  }
+
+  .district-map__header h1 {
+    max-width: 100%;
+    font-size: 28px;
+  }
+
+  .district-map__point-label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .district-map__point.is-active .district-map__point-icon,
+  .district-map__playing-mark.is-playing span {
+    animation: none;
+  }
+}
