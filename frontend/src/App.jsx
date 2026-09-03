@@ -5,6 +5,7 @@ import SchedulePage from './pages/SchedulePage/SchedulePage'
 import MainTabs from './pages/MainTabs/MainTabs'
 import AuthPage from './pages/AuthPage/AuthPage'
 import DashboardPage from './pages/DashboardPage/DashboardPage'
+import MapPage from './pages/MapPage/MapPage'
 import WelcomeModal from './components/WelcomeModal/WelcomeModal'
 import Particles from './components/Particles/Particles'
 import WarmBackdrop from './components/WarmBackdrop/WarmBackdrop'
@@ -18,7 +19,7 @@ const PULL_TO_REFRESH_KEY = 'pull-to-refresh-active'
 // В установленном PWA браузерной кнопки обновления нет. Если пользователь
 // тянет страницу вниз от самой верхней границы, отпускаем жест и перезагружаем
 // приложение после прохождения порога. Горизонтальные свайпы не перехватываем.
-function useStandalonePullToRefresh() {
+function useStandalonePullToRefresh(enabled = true) {
   const gestureRef = useRef(null)
   const [resumed] = useState(() => sessionStorage.getItem(PULL_TO_REFRESH_KEY) === '1')
   const [pullDistance, setPullDistance] = useState(
@@ -35,6 +36,8 @@ function useStandalonePullToRefresh() {
           setPullDistance(0)
         }, 1200)
       : 0
+
+    if (!enabled) return () => clearTimeout(finishTimer)
 
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -114,7 +117,7 @@ function useStandalonePullToRefresh() {
       clearTimeout(reloadTimer)
       clearTimeout(finishTimer)
     }
-  }, [resumed])
+  }, [enabled, resumed])
 
   return { pullDistance, refreshing }
 }
@@ -162,9 +165,10 @@ function Home() {
 }
 
 export default function App() {
-  const pullRefresh = useStandalonePullToRefresh()
   const location = useLocation()
-  const isPublic = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/dashboard')
+  const isMap = location.pathname === '/map' || location.pathname === '/map/'
+  const pullRefresh = useStandalonePullToRefresh(!isMap)
+  const isPublic = !isMap && !location.pathname.startsWith('/login') && !location.pathname.startsWith('/dashboard')
   const [welcomeOpen, setWelcomeOpen] = useState(() => !localStorage.getItem(WELCOME_KEY))
 
   function closeWelcome() {
@@ -174,11 +178,12 @@ export default function App() {
 
   return (
     <>
-    <PullToRefreshIndicator {...pullRefresh} />
-    <Particles />
-    <WarmBackdrop />
+    {!isMap && <PullToRefreshIndicator {...pullRefresh} />}
+    {!isMap && <Particles />}
+    {!isMap && <WarmBackdrop />}
 
     <Routes>
+      <Route path="/map" element={<MapPage />} />
       {/* Без GuestOnly: иначе вкладка «Расписание» в нижнем меню у вошедшего
           пользователя перекидывала на админ-панель вместо расписания. */}
       <Route path="/" element={<Home />} />
