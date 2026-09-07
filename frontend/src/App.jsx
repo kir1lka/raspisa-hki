@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
 import SchedulePage from './pages/SchedulePage/SchedulePage'
 import MainTabs from './pages/MainTabs/MainTabs'
 import AuthPage from './pages/AuthPage/AuthPage'
 import DashboardPage from './pages/DashboardPage/DashboardPage'
-import MapPage from './pages/MapPage/MapPage'
 import WelcomeModal from './components/WelcomeModal/WelcomeModal'
 import Particles from './components/Particles/Particles'
 import WarmBackdrop from './components/WarmBackdrop/WarmBackdrop'
@@ -13,6 +12,7 @@ import { getUser } from './auth'
 import { getDefaultSelection, defaultSelectionPath, getLastSelection } from './defaultSelection'
 
 const WELCOME_KEY = 'welcome-seen-v1'
+const MapPage = lazy(() => import('./pages/MapPage/MapPage'))
 const PULL_TO_REFRESH_THRESHOLD = 110
 const PULL_TO_REFRESH_KEY = 'pull-to-refresh-active'
 
@@ -183,7 +183,7 @@ export default function App() {
     {!isMap && <WarmBackdrop />}
 
     <Routes>
-      <Route path="/map" element={<MapPage />} />
+      <Route path="/map" element={<Suspense fallback={null}><MapPage /></Suspense>} />
       {/* Без GuestOnly: иначе вкладка «Расписание» в нижнем меню у вошедшего
           пользователя перекидывала на админ-панель вместо расписания. */}
       <Route path="/" element={<Home />} />

@@ -1,243 +1,329 @@
 import { useEffect, useRef, useState } from 'react'
-import { Church, Pause, Play, Trees, Volume2, VolumeX, Waves, X } from 'lucide-react'
+import { flushSync } from 'react-dom'
+import * as maplibregl from 'maplibre-gl'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+import { MapPin, Plus, X, LocateFixed, Pencil, Music2, ImagePlus, LogOut, Trash2 } from 'lucide-react'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import baseStyle from './base-style.json'
 import './MapPage.css'
 
-const ATTRACTIONS = [
-  {
-    id: 'chapel',
-    title: 'Храм в Строителе',
-    caption: 'Колокольный мотив',
-    icon: Church,
-    position: { left: '49%', top: '47%' },
-    notes: [392, 523.25, 659.25, 523.25, 440, 587.33],
-    wave: 'sine',
-  },
-  {
-    id: 'grove',
-    title: 'Дубовая роща',
-    caption: 'Тихая лесная мелодия',
-    icon: Trees,
-    position: { left: '26%', top: '36%' },
-    notes: [220, 277.18, 329.63, 277.18, 246.94, 293.66],
-    wave: 'triangle',
-  },
-  {
-    id: 'river',
-    title: 'Берег Ворсклы',
-    caption: 'Спокойный водный мотив',
-    icon: Waves,
-    position: { left: '38%', top: '68%' },
-    notes: [261.63, 329.63, 392, 329.63, 293.66, 349.23],
-    wave: 'sine',
-  },
+maplibregl.setWorkerUrl(workerUrl)
+
+const CENTER = [36.483, 50.788]
+const VIEW = { center: CENTER, zoom: 13.1, bearing: 0, pitch: 0 }
+// A navigation window around the city, not its administrative boundary.
+const CITY_BOUNDS = [[36.420, 50.745], [36.535, 50.840]]
+const clampPoint = ({ lat, lng }) => ({
+  latitude: Math.max(CITY_BOUNDS[0][1], Math.min(CITY_BOUNDS[1][1], lat)),
+  longitude: Math.max(CITY_BOUNDS[0][0], Math.min(CITY_BOUNDS[1][0], lng)),
+})
+const imageUrl = place => `/api/map/places/${place.id}/image?v=${place.imageId}`
+const EMPTY = { title: '', description: '', latitude: CENTER[1], longitude: CENTER[0], icon: 'pin' }
+const PLACE_ICONS = [
+  { id: 'pin', label: 'Место', path: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0' },
+  { id: 'school', label: 'Школа', path: 'M3 22V10l9-7 9 7v12H3ZM9 22v-6h6v6M7 11v2m10-2v2M12 3V1m-2 8h4' },
+  { id: 'hospital', label: 'Больница', path: 'M5 22V3h14v19H5ZM9 7h6m-3-3v6M9 22v-6h6v6M2 22h20' },
+  { id: 'park', label: 'Парк', path: 'M12 2 5 11h4l-5 7h16l-5-7h4L12 2ZM12 18v4' },
+  { id: 'church', label: 'Храм', path: 'M12 2v6m-3-3h6M5 22V13l7-5 7 5v9H5ZM10 22v-6h4v6M2 22h20' },
+  { id: 'museum', label: 'Музей', path: 'm3 8 9-6 9 6H3ZM5 11v8m5-8v8m4-8v8m5-8v8M3 22h18M2 19h20' },
+  { id: 'cafe', label: 'Кафе', path: 'M4 8h13v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8ZM17 8h2a3 3 0 0 1 0 6h-2M7 2v3m4-3v3m4-3v3' },
+  { id: 'music', label: 'Музыка', path: 'M9 18V5l12-3v13M9 8l12-3M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0' },
 ]
+const placeIcon = name => PLACE_ICONS.find(icon => icon.id === name) || PLACE_ICONS[0]
 
-const LOOP_SECONDS = 4.8
+function PlaceIcon({ name }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={placeIcon(name).path} /></svg>
+}
 
-function scheduleLoop(context, output, attraction, startAt) {
-  attraction.notes.forEach((frequency, index) => {
-    const noteStart = startAt + index * 0.72
-    const oscillator = context.createOscillator()
-    const envelope = context.createGain()
-
-    oscillator.type = attraction.wave
-    oscillator.frequency.setValueAtTime(frequency, noteStart)
-    envelope.gain.setValueAtTime(0.0001, noteStart)
-    envelope.gain.exponentialRampToValueAtTime(0.22, noteStart + 0.06)
-    envelope.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.64)
-    oscillator.connect(envelope)
-    envelope.connect(output)
-    oscillator.start(noteStart)
-    oscillator.stop(noteStart + 0.68)
+async function request(path, options = {}) {
+  const response = await fetch(`/api/map${path}`, {
+    cache: 'no-store', ...options, headers: { 'X-Map-Request': '1', ...options.headers },
   })
+  if (!response.ok) {
+    let message = response.status === 401 ? 'Войдите в редактор ещё раз: сессия завершилась.'
+      : response.status === 403 ? 'Для редактирования нужна учётная запись администратора.'
+        : response.status === 413 ? 'Слишком большой файл: песня — до 20 МБ, изображение — до 8 МБ.' : 'Не удалось выполнить запрос. Попробуйте ещё раз.'
+    try { const data = await response.json(); if (data.error && [400, 401].includes(response.status) && !data.path) message = data.error } catch { /* Keep readable fallback. */ }
+    throw Object.assign(new Error(message), { status: response.status })
+  }
+  const text = await response.text()
+  return text ? JSON.parse(text) : null
 }
 
-function LandscapeMark() {
-  return (
-    <svg className="district-map__landscape" viewBox="0 0 520 250" aria-hidden="true">
-      <path className="district-map__sky" d="M0 250C35 183 86 143 151 130c54-11 87 2 131-12 65-20 73-90 148-110 35-9 66-4 90 4v238H0Z" />
-      <path className="district-map__hill-back" d="M0 250c56-55 122-74 193-55 51 14 79 17 126-2 74-30 131-26 201 25v32H0Z" />
-      <path className="district-map__hill-front" d="M0 250c64-37 126-47 187-27 67 22 103 19 160-7 62-29 116-20 173 14v20H0Z" />
-      <g className="district-map__trees">
-        <path d="m89 215 17-48 17 48Z" /><path d="m123 220 21-64 21 64Z" />
-        <path d="m405 218 18-53 18 53Z" /><path d="m443 222 22-69 22 69Z" />
-      </g>
-      <g className="district-map__chapel">
-        <path d="M284 205v-67h72v67Z" />
-        <path d="m276 143 44-37 44 37Z" />
-        <path d="M310 111V78h20v33Z" />
-        <path d="M306 78c0-13 7-24 14-24s14 11 14 24Z" />
-        <path d="M319 54V38M311 46h16" />
-        <path d="M298 164h12v41h-12Zm31 0h12v41h-12Z" />
-      </g>
-      <g className="district-map__clouds">
-        <path d="M44 102c3-17 26-21 35-7 10-20 41-11 40 11h-75Z" />
-        <path d="M407 75c4-15 24-19 32-7 9-18 35-10 35 9h-67Z" />
-      </g>
-    </svg>
-  )
+function Login({ onClose, onLogin }) {
+  const dialog = useRef(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => { dialog.current.showModal() }, [])
+  async function submit(event) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    const form = new FormData(event.currentTarget)
+    try {
+      await request('/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(form)) })
+      onLogin()
+    } catch (err) { setError(err.message) } finally { setBusy(false) }
+  }
+  return <dialog className="map-login map-card" ref={dialog} onCancel={onClose} aria-labelledby="map-login-title">
+    <button className="map-icon map-panel-close" onClick={onClose} aria-label="Закрыть вход"><X /></button>
+    <span className="map-eyebrow">РЕДАКТОР КАРТЫ</span>
+    <h2 id="map-login-title">Ваши места и музыка</h2>
+    <p>Войдите с логином и паролем администратора сайта, чтобы добавлять места.</p>
+    <form onSubmit={submit} className="map-form">
+      <label>Логин<input name="login" autoComplete="username" required autoFocus /></label>
+      <label>Пароль<input name="password" type="password" autoComplete="current-password" required /></label>
+      {error && <p className="map-error" role="alert">{error}</p>}
+      <button className="map-primary" disabled={busy}>{busy ? 'Входим…' : 'Войти в редактор'}</button>
+    </form>
+  </dialog>
 }
 
-function DistrictOutline() {
-  return (
-    <svg className="district-map__outline" viewBox="0 0 900 760" role="img" aria-label="Заготовка карты Яковлевского района">
-      <defs>
-        <filter id="map-shadow" x="-15%" y="-15%" width="130%" height="140%">
-          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#1b3159" floodOpacity="0.12" />
-        </filter>
-      </defs>
-      <path
-        className="district-map__region"
-        filter="url(#map-shadow)"
-        d="M109 178c19-42 58-32 78-15 22 19 42-4 65 1 20 5 24 27 45 20 25-9 36-46 74-49 37-3 42 24 74 17 32-8 39 8 43 29 5 26 42 10 57 30 12 16 24 46 52 37 23-7 23-36 47-35 22 1 18 32 38 37 24 7 37-23 62-17 29 7 17 43 38 55 21 13 51-4 67 20 17 25-7 46 5 70 11 22 42 24 40 54-1 25-25 30-33 52-9 24 17 41-4 64-23 24-50 3-74 16-23 13-9 47-39 56-30 9-42-16-68-19-34-4-48 27-78 16-32-12-35-47-62-53-27-6-43 16-67 5-26-11-19-42-45-49-26-7-44 22-70 10-27-12-14-44-38-58-21-13-47-1-63-22-18-24 2-52-21-70-19-15-46 6-57-19-12-27 11-52-8-69-18-16-43 2-58-21-13-21 9-40-5-60-13-17-36-22-32-49Z"
-      />
-      <path className="district-map__divider" d="M427 154c-14 92 17 133-23 207-37 70-12 120-64 177-25 28-38 65-44 105" />
-      <path className="district-map__divider" d="M405 362c84-7 145 24 218 4 65-18 111 2 157 45" />
-      <circle className="district-map__center-dot" cx="443" cy="370" r="10" />
-    </svg>
-  )
+function PlaceEditor({ draft, onChange, onClose, onSave, busy, error, onUseCenter }) {
+  const [file, setFile] = useState(null)
+  const [fileError, setFileError] = useState('')
+  const [removeAudio, setRemoveAudio] = useState(false)
+  const [preview, setPreview] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imageError, setImageError] = useState('')
+  const [imagePreview, setImagePreview] = useState('')
+  const [removeImage, setRemoveImage] = useState(false)
+  function pickImage(event) {
+    const next = event.target.files?.[0]
+    setImageError(''); setImageFile(null); setImagePreview('')
+    if (!next) return
+    if (next.size > 8 * 1024 * 1024 || !/\.(jpe?g|png)$/i.test(next.name)) {
+      setImageError('Выберите JPG или PNG размером до 8 МБ.')
+      event.target.value = ''
+      return
+    }
+    setImageFile(next); setImagePreview(URL.createObjectURL(next)); setRemoveImage(false)
+  }
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }, [imagePreview])
+  function pickFile(event) {
+    const next = event.target.files?.[0]
+    setFileError('')
+    setFile(null)
+    setPreview('')
+    if (!next) return
+    if (next.size > 20 * 1024 * 1024 || !/\.(mp3|wav|ogg)$/i.test(next.name)) {
+      setFileError('Выберите MP3, WAV или OGG размером до 20 МБ.')
+      event.target.value = ''
+      return
+    }
+    setFile(next)
+    setPreview(URL.createObjectURL(next))
+    setRemoveAudio(false)
+  }
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+  return <aside className="map-panel map-card" aria-labelledby="map-editor-title">
+    <button className="map-icon map-panel-close" onClick={onClose} disabled={busy} aria-label="Закрыть редактор места"><X /></button>
+    <span className="map-eyebrow">РЕДАКТОР КАРТЫ</span>
+    <h2 id="map-editor-title">{draft.id ? 'Изменить место' : 'Новое место'}</h2>
+    <p>Нажмите на карту, чтобы поставить метку. Её можно перетаскивать.</p>
+    <form className="map-form" onSubmit={event => { event.preventDefault(); if (!fileError && !imageError) onSave(file, removeAudio, imageFile, removeImage) }}>
+      <fieldset disabled={busy}>
+        <label>Название места<input autoFocus required maxLength={120} value={draft.title} placeholder="Как называется это место?" onChange={e => onChange({ ...draft, title: e.target.value })} /></label>
+        <div className="map-icon-picker" role="group" aria-labelledby="map-icon-label">
+          <span id="map-icon-label">Иконка на карте</span>
+          <div className="map-icon-options">{PLACE_ICONS.map(icon => <button key={icon.id} type="button" className="map-icon-option" aria-pressed={placeIcon(draft.icon).id === icon.id} onClick={() => onChange({ ...draft, icon: icon.id })}><PlaceIcon name={icon.id} /><span>{icon.label}</span></button>)}</div>
+        </div>
+        <label>Описание<textarea maxLength={3000} rows={3} value={draft.description} placeholder="Что здесь интересного, как добраться…" onChange={e => onChange({ ...draft, description: e.target.value })} /></label>
+        <div className="map-coordinates"><MapPin size={16} /><span>{draft.latitude.toFixed(5)}, {draft.longitude.toFixed(5)}</span><button type="button" onClick={onUseCenter}>В центре карты</button></div>
+        <label className="map-upload"><span><ImagePlus size={18} /> Изображение в описании</span><small>JPG или PNG · до 8 МБ</small><input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={pickImage} /></label>
+        {imageError && <p className="map-error" role="alert">{imageError}</p>}
+        {(imagePreview || (draft.imageId && !removeImage)) && <img className="map-image-preview" src={imagePreview || imageUrl(draft)} alt="Предпросмотр изображения места" onError={() => setImageError('Не удалось открыть изображение. Выберите другой JPG или PNG.')} />}
+        {draft.imageId && !imageFile && <label className="map-checkbox"><input type="checkbox" checked={removeImage} onChange={e => { setRemoveImage(e.target.checked); setImageError('') }} /> Удалить текущее изображение</label>}
+        <label className="map-upload"><span><Music2 size={18} /> Песня для этого места</span><small>MP3, WAV или OGG · до 20 МБ</small><input type="file" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg" onChange={pickFile} /></label>
+        {fileError && <p className="map-error" role="alert">{fileError}</p>}
+        {file && preview ? <audio controls src={preview} /> : draft.audioId && !removeAudio ? <><small className="map-filename">{draft.audioName}</small><audio controls src={`/api/map/places/${draft.id}/audio`} /></> : null}
+        {draft.audioId && !file && <label className="map-checkbox"><input type="checkbox" checked={removeAudio} onChange={e => setRemoveAudio(e.target.checked)} /> Удалить текущую песню</label>}
+        <div className="map-form-actions"><button className="map-secondary" type="button" onClick={onClose}>Отмена</button><button className="map-primary" disabled={!!fileError || !!imageError || !draft.title.trim()}>{busy ? 'Сохраняем…' : 'Сохранить место'}</button></div>
+      </fieldset>
+      {error && <p className="map-error" role="alert">{error}</p>}
+    </form>
+  </aside>
 }
 
 export default function MapPage() {
+  const container = useRef(null)
+  const mapRef = useRef(null)
+  const draftMarker = useRef(null)
+  const editing = useRef(false)
+  const saving = useRef(false)
   const audioRef = useRef(null)
-  const loopRef = useRef(null)
-  const [activeId, setActiveId] = useState(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [volume, setVolume] = useState(0.62)
-  const activeAttraction = ATTRACTIONS.find((item) => item.id === activeId)
-
-  function stopAudio() {
-    window.clearInterval(loopRef.current)
-    loopRef.current = null
-    if (audioRef.current?.context) audioRef.current.context.close()
-    audioRef.current = null
-    setIsPlaying(false)
-  }
-
-  function startAttraction(attraction) {
-    stopAudio()
-    const AudioContext = window.AudioContext || window.webkitAudioContext
-    if (!AudioContext) return
-
-    const context = new AudioContext()
-    const output = context.createGain()
-    output.gain.value = volume
-    output.connect(context.destination)
-    scheduleLoop(context, output, attraction, context.currentTime + 0.08)
-    loopRef.current = window.setInterval(() => {
-      scheduleLoop(context, output, attraction, context.currentTime + 0.08)
-    }, LOOP_SECONDS * 1000)
-    audioRef.current = { context, output }
-    setActiveId(attraction.id)
-    setIsPlaying(true)
-  }
-
-  async function togglePlayback() {
-    const context = audioRef.current?.context
-    if (!context) return
-    if (context.state === 'running') {
-      await context.suspend()
-      setIsPlaying(false)
-    } else {
-      await context.resume()
-      setIsPlaying(true)
-    }
-  }
-
-  function changeVolume(event) {
-    const nextVolume = Number(event.target.value)
-    setVolume(nextVolume)
-    if (audioRef.current?.output) audioRef.current.output.gain.value = nextVolume
-  }
-
-  function closePlayer() {
-    stopAudio()
-    setActiveId(null)
-  }
+  const [ready, setReady] = useState(false)
+  const [mapError, setMapError] = useState('')
+  const [places, setPlaces] = useState([])
+  const [loadError, setLoadError] = useState('')
+  const [editor, setEditor] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [draft, setDraft] = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
-    const previousTitle = document.title
-    document.documentElement.classList.add('map-mode')
-    document.title = 'Интерактивная карта Яковлевского района'
+    const audio = audioRef.current
+    return () => { audio?.pause() }
+  }, [selected?.id, selected?.audioId])
 
+  useEffect(() => {
+    let cancelled = false
+    const title = document.title
+    document.title = 'Карта Строителя · Яковлевский район'
+    document.documentElement.classList.add('map-mode')
+    request('/places').then(data => { if (!cancelled) setPlaces(data) }).catch(() => { if (!cancelled) setLoadError('Не удалось загрузить ваши места. Обновите страницу или попробуйте позже.') })
+    request('/session').then(data => { if (!cancelled) setEditor(data.editor) }).catch(() => {})
+    let map
+    try {
+      map = new maplibregl.Map({ container: container.current, style: structuredClone(baseStyle), ...VIEW,
+        minZoom: 12.3, maxZoom: 19, maxBounds: CITY_BOUNDS, renderWorldCopies: false, dragRotate: false, touchPitch: false, maxPitch: 0, attributionControl: false,
+        locale: { 'NavigationControl.ZoomIn': 'Приблизить', 'NavigationControl.ZoomOut': 'Отдалить', 'AttributionControl.ToggleAttribution': 'Источники карты' },
+      })
+      mapRef.current = map
+      map.touchZoomRotate.disableRotation()
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
+      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+      map.on('load', () => { setReady(true); setMapError('') })
+      map.on('error', () => setMapError('Часть карты не загрузилась. Проверьте подключение к интернету.'))
+      map.on('idle', () => { if (map.areTilesLoaded()) setMapError('') })
+      map.on('click', event => {
+        if (!editing.current || saving.current) return
+        setDraft(current => current ? { ...current, ...clampPoint(event.lngLat) } : current)
+      })
+    } catch {
+      // Map construction is an external operation; report its failure after effect setup.
+      queueMicrotask(() => { if (!cancelled) setMapError('Браузер не смог открыть карту. Включите аппаратное ускорение или попробуйте другой браузер.') })
+    }
     return () => {
-      window.clearInterval(loopRef.current)
-      if (audioRef.current?.context) audioRef.current.context.close()
+      cancelled = true
+      map?.remove()
+      mapRef.current = null
       document.documentElement.classList.remove('map-mode')
-      document.title = previousTitle
+      document.title = title
     }
   }, [])
 
-  return (
-    <div className="district-map">
-      <header className="district-map__header">
-        <h1>
-          <span>Интерактивная карта</span>
-          <strong>Яковлевского района</strong>
-        </h1>
-        <LandscapeMark />
-      </header>
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    const markers = places.filter(place => place.id !== draft?.id).map(place => {
+      const button = document.createElement('button')
+      button.className = `map-place-marker${selected?.id === place.id ? ' is-selected' : ''}`
+      button.type = 'button'
+      button.setAttribute('aria-label', `Открыть место: ${place.title}`)
+      const dot = document.createElement('span')
+      dot.className = 'map-marker-dot'
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      for (const [key, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) svg.setAttribute(key, value)
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path.setAttribute('d', placeIcon(place.icon).path)
+      svg.append(path)
+      dot.append(svg)
+      const label = document.createElement('span')
+      label.className = 'map-marker-label'
+      label.textContent = place.title
+      button.append(dot, label)
+      button.addEventListener('click', event => {
+        event.stopPropagation()
+        if (editing.current) return
+        // Mount the player inside the click gesture so mobile browsers can play sound.
+        flushSync(() => { setSelected(place); setConfirmDelete(false); setError('') })
+        const audio = audioRef.current
+        if (place.audioId && audio) {
+          audio.play().catch(err => {
+            if (err.name !== 'AbortError' && audioRef.current === audio)
+              setError(err.name === 'NotAllowedError' ? 'Нажмите ▶ в плеере, чтобы включить песню.' : 'Не удалось включить песню. Попробуйте запустить её в плеере.')
+          })
+        }
+      })
+      return new maplibregl.Marker({ element: button, anchor: 'bottom' }).setLngLat([place.longitude, place.latitude]).addTo(map)
+    })
+    return () => markers.forEach(marker => marker.remove())
+  }, [places, ready, selected?.id, draft?.id])
 
-      <main className="district-map__canvas">
-        <div className="district-map__stage">
-          <DistrictOutline />
-          {ATTRACTIONS.map((attraction) => {
-            const Icon = attraction.icon
-            const active = attraction.id === activeId
-            return (
-              <button
-                className={`district-map__point${active ? ' is-active' : ''}`}
-                key={attraction.id}
-                style={attraction.position}
-                type="button"
-                aria-label={`Включить аудио: ${attraction.title}`}
-                aria-pressed={active}
-                onClick={() => startAttraction(attraction)}
-              >
-                <span className="district-map__point-icon"><Icon aria-hidden="true" /></span>
-                <span className="district-map__point-label">{attraction.title}</span>
-              </button>
-            )
-          })}
-        </div>
-      </main>
+  useEffect(() => {
+    editing.current = !!draft
+    saving.current = busy
+    const map = mapRef.current
+    if (!map || !ready) return
+    map.getCanvas().style.cursor = draft ? 'crosshair' : ''
+    if (draft) {
+      if (!draftMarker.current) {
+        draftMarker.current = new maplibregl.Marker({ color: '#ed5144', draggable: true }).setLngLat([draft.longitude, draft.latitude]).addTo(map)
+        draftMarker.current.on('dragend', () => {
+          const point = draftMarker.current.getLngLat()
+          setDraft(current => current ? { ...current, ...clampPoint(point) } : current)
+        })
+      }
+      draftMarker.current.setLngLat([draft.longitude, draft.latitude]).setDraggable(!busy)
+    } else {
+      draftMarker.current?.remove()
+      draftMarker.current = null
+    }
+  }, [draft, ready, busy])
 
-      <footer className="district-map__footer">
-        <p>Сделано Школой креативных индустрий</p>
-        <nav aria-label="Социальные сети">
-          <a href="https://vk.com/shkistroitel" target="_blank" rel="noreferrer">
-            <span className="district-map__vk" aria-hidden="true">VK</span>
-            <span>VK</span>
-          </a>
-          <a href="https://web.max.ru/-69221720244297" target="_blank" rel="noreferrer">
-            <span className="district-map__max" aria-hidden="true" />
-            <span>MAX</span>
-          </a>
-        </nav>
-      </footer>
+  function startDraft(place) {
+    const center = mapRef.current.getCenter()
+    setDraft(place ? { ...place } : { ...EMPTY, latitude: center.lat, longitude: center.lng })
+    setSelected(null); setError(''); setConfirmDelete(false)
+  }
 
-      {activeAttraction && (
-        <section className="district-map__player" aria-label="Аудиогид">
-          <div className={`district-map__playing-mark${isPlaying ? ' is-playing' : ''}`} aria-hidden="true">
-            <span /><span /><span />
-          </div>
-          <div className="district-map__track">
-            <strong>{activeAttraction.title}</strong>
-            <span>{isPlaying ? activeAttraction.caption : 'Воспроизведение приостановлено'}</span>
-          </div>
-          <button className="district-map__control" type="button" onClick={togglePlayback} aria-label={isPlaying ? 'Пауза' : 'Продолжить'}>
-            {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-          </button>
-          <label className="district-map__volume">
-            {volume === 0 ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
-            <span className="sr-only">Громкость</span>
-            <input type="range" min="0" max="1" step="0.05" value={volume} onChange={changeVolume} />
-          </label>
-          <button className="district-map__control district-map__close" type="button" onClick={closePlayer} aria-label="Закрыть аудиогид">
-            <X aria-hidden="true" />
-          </button>
-        </section>
-      )}
+  async function save(file, removeAudio, imageFile, removeImage) {
+    setBusy(true); setError('')
+    const form = new FormData()
+    for (const key of ['title', 'description', 'latitude', 'longitude']) form.append(key, draft[key])
+    form.append('icon', placeIcon(draft.icon).id)
+    form.append('removeAudio', String(removeAudio))
+    if (file) form.append('audio', file)
+    form.append('removeImage', String(removeImage))
+    if (imageFile) form.append('image', imageFile)
+    try {
+      const saved = await request(`/places${draft.id ? `/${draft.id}` : ''}`, { method: draft.id ? 'PUT' : 'POST', body: form })
+      setPlaces(current => [...current.filter(place => place.id !== saved.id), saved])
+      setDraft(null); setSelected(saved)
+    } catch (err) { setError(err.message); if (err.status === 401) setLoginOpen(true) } finally { setBusy(false) }
+  }
+
+  async function deletePlace() {
+    setBusy(true); setError('')
+    try {
+      await request(`/places/${selected.id}`, { method: 'DELETE' })
+      setPlaces(current => current.filter(place => place.id !== selected.id))
+      setSelected(null); setConfirmDelete(false)
+    } catch (err) { setError(err.message); if (err.status === 401) setLoginOpen(true) } finally { setBusy(false) }
+  }
+
+  async function logout() {
+    try { await request('/session', { method: 'DELETE' }); setEditor(false); setDraft(null); setError('') }
+    catch (err) { setLoadError(err.message) }
+  }
+
+  return <main className="district-map" data-no-pull-to-refresh>
+    <h1 className="map-sr-only">Интерактивная карта Яковлевского района</h1>
+    <div ref={container} className="map-canvas" aria-label="Карта улиц Строителя" />
+    <div className="map-brand"><div className="map-location map-card"><span className="map-location-icon"><MapPin size={22} /></span><div><strong>Строитель</strong><span>Город и ближайшие окрестности</span></div></div><p className="map-credit">Сделано в Школе креативных индустрий</p></div>
+    <div className="map-toolbar">
+      {editor ? <><button className="map-primary map-add" disabled={!ready || !!draft || busy} onClick={() => startDraft()}><Plus size={19} /> Добавить место</button><button className="map-icon map-card" disabled={!!draft || busy} onClick={logout} aria-label="Выйти из редактора"><LogOut size={19} /></button></>
+        : <button className="map-secondary map-card" onClick={() => setLoginOpen(true)}><Pencil size={17} /> Редактор карты</button>}
     </div>
-  )
+    {(!ready || mapError || loadError) && <div className="map-status map-card" role="status">{mapError || loadError || 'Загружаем карту…'}{(mapError || loadError) && <button onClick={() => window.location.reload()}>Повторить</button>}</div>}
+    <button className="map-home map-icon map-card" disabled={!ready} onClick={() => mapRef.current?.flyTo(VIEW)} aria-label="Вернуться к Строителю" title="Вернуться к Строителю"><LocateFixed size={21} /></button>
+    {editor && !draft && !selected && ready && <div className="map-editor-hint map-card"><span className="map-live-dot" />Режим редактирования<span>Добавьте место и прикрепите песню</span></div>}
+    {draft && <PlaceEditor key={draft.id || 'new'} draft={draft} onChange={setDraft} onClose={() => setDraft(null)} onSave={save} busy={busy} error={error} onUseCenter={() => { const center = mapRef.current.getCenter(); setDraft({ ...draft, latitude: center.lat, longitude: center.lng }) }} />}
+    {selected && <aside className="map-panel map-card" aria-labelledby="map-place-title">
+      <button className="map-icon map-panel-close" disabled={busy} onClick={() => setSelected(null)} aria-label="Закрыть место"><X /></button>
+      <span className="map-eyebrow">МЕСТО НА КАРТЕ</span><h2 id="map-place-title">{selected.title}</h2>
+      {selected.imageId && <img key={selected.imageId} className="map-place-image" src={imageUrl(selected)} alt={selected.title} onError={event => { event.currentTarget.hidden = true }} />}
+      {selected.description && <p className="map-description">{selected.description}</p>}
+      {selected.audioId ? <div className="map-track" key={`${selected.id}-${selected.audioId}`}><span><Music2 size={18} /> {selected.audioName}</span><audio ref={audioRef} controls preload="metadata" src={`/api/map/places/${selected.id}/audio`} onError={() => setError('Не удалось воспроизвести песню. Проверьте соединение или замените аудиофайл.')} /></div> : <p>К этому месту пока не добавлена песня.</p>}
+      {editor && <div className="map-form-actions"><button className="map-secondary" disabled={busy} onClick={() => startDraft(selected)}><Pencil size={16} /> Изменить</button><button className="map-icon map-danger" disabled={busy} onClick={() => setConfirmDelete(true)} aria-label="Удалить место"><Trash2 size={18} /></button></div>}
+      {confirmDelete && <div className="map-delete-confirm"><p>Удалить место, его песню и изображение?</p><button className="map-secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>Отмена</button><button className="map-danger" disabled={busy} onClick={deletePlace}>{busy ? 'Удаляем…' : 'Удалить'}</button></div>}
+      {error && <p className="map-error" role="alert">{error}</p>}
+    </aside>}
+    {loginOpen && <Login onClose={() => setLoginOpen(false)} onLogin={() => { setEditor(true); setLoginOpen(false) }} />}
+  </main>
 }
