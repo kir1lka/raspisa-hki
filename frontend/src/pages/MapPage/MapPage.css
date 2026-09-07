@@ -91,7 +91,15 @@ html.map-mode body::before, html.map-mode body::after { display: none; }
 /* The coordinate stays at the bottom of the dot; photos and labels do not move it. */
 .map-place-marker { position: absolute; top: 0; left: 0; width: 38px; height: 38px; overflow: visible; }
 .map-marker-label { position: absolute; top: 43px; left: 50%; transform: translateX(-50%); }
-.map-place-image, .map-image-preview { display: block; width: 100%; max-height: 290px; object-fit: contain; background: #f3f5ef; border-radius: 14px; }
+.map-photo { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 290px; overflow: hidden; background: #f3f5ef; border-radius: 14px; }
+.map-photo img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+.map-photo.is-loaded img { opacity: 1; animation: map-photo-reveal 350ms ease-out; }
+.map-photo-skeleton { position: absolute; inset: 0; background: #e7ece3; overflow: hidden; }
+.map-photo-skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, #ffffff80 50%, transparent 80%); animation: map-photo-shimmer 1.4s ease-in-out infinite; }
+.map-photo-error { display: grid; place-items: center; height: 100%; padding: 20px; text-align: center; color: #7a8477; font-size: 14px; }
+@keyframes map-photo-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes map-photo-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .map-photo-skeleton::after, .map-photo.is-loaded img { animation: none; } }
 .map-place-image { margin: 20px 0; }
 .map-place-image[hidden] { display: none; }
 .map-image-preview { max-height: 180px; }

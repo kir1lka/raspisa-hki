@@ -35,6 +35,15 @@ function PlaceIcon({ name }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={placeIcon(name).path} /></svg>
 }
 
+function MapPhoto({ src, alt, className, onError }) {
+  const [status, setStatus] = useState('loading')
+  return <div className={`map-photo ${className} is-${status}`} aria-busy={status === 'loading'}>
+    {status === 'loading' && <span className="map-photo-skeleton" role="status"><span className="map-sr-only">Загрузка фотографии</span></span>}
+    {status === 'error' ? <span className="map-photo-error" role="status">Не удалось загрузить фотографию</span>
+      : <img src={src} alt={alt} decoding="async" onLoad={() => setStatus('loaded')} onError={() => { setStatus('error'); onError?.() }} />}
+  </div>
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`/api/map${path}`, {
     cache: 'no-store', ...options, headers: { 'X-Map-Request': '1', ...options.headers },
@@ -132,7 +141,7 @@ function PlaceEditor({ draft, onChange, onClose, onSave, busy, error, onUseCente
         <div className="map-coordinates"><MapPin size={16} /><span>{draft.latitude.toFixed(5)}, {draft.longitude.toFixed(5)}</span><button type="button" onClick={onUseCenter}>В центре карты</button></div>
         <label className="map-upload"><span><ImagePlus size={18} /> Изображение в описании</span><small>JPG или PNG · до 8 МБ</small><input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={pickImage} /></label>
         {imageError && <p className="map-error" role="alert">{imageError}</p>}
-        {(imagePreview || (draft.imageId && !removeImage)) && <img className="map-image-preview" src={imagePreview || imageUrl(draft)} alt="Предпросмотр изображения места" onError={() => setImageError('Не удалось открыть изображение. Выберите другой JPG или PNG.')} />}
+        {(imagePreview || (draft.imageId && !removeImage)) && <MapPhoto key={imagePreview || imageUrl(draft)} className="map-image-preview" src={imagePreview || imageUrl(draft)} alt="Предпросмотр изображения места" onError={() => setImageError('Не удалось открыть изображение. Выберите другой JPG или PNG.')} />}
         {draft.imageId && !imageFile && <label className="map-checkbox"><input type="checkbox" checked={removeImage} onChange={e => { setRemoveImage(e.target.checked); setImageError('') }} /> Удалить текущее изображение</label>}
         <label className="map-upload"><span><Music2 size={18} /> Песня для этого места</span><small>MP3, WAV или OGG · до 20 МБ</small><input type="file" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg" onChange={pickFile} /></label>
         {fileError && <p className="map-error" role="alert">{fileError}</p>}
@@ -327,7 +336,7 @@ export default function MapPage() {
     {selected && <aside className="map-panel map-card" aria-labelledby="map-place-title">
       <button className="map-icon map-panel-close" disabled={busy} onClick={() => setSelected(null)} aria-label="Закрыть место"><X /></button>
       <span className="map-eyebrow">МЕСТО НА КАРТЕ</span><h2 id="map-place-title">{selected.title}</h2>
-      {selected.imageId && <img key={selected.imageId} className="map-place-image" src={imageUrl(selected)} alt={selected.title} onError={event => { event.currentTarget.hidden = true }} />}
+      {selected.imageId && <MapPhoto key={imageUrl(selected)} className="map-place-image" src={imageUrl(selected)} alt={selected.title} />}
       {selected.description && <p className="map-description">{selected.description}</p>}
       {selected.audioId ? <div className="map-track" key={`${selected.id}-${selected.audioId}`}><span><Music2 size={18} /> {selected.audioName}</span><audio ref={audioRef} controls preload="metadata" src={`/api/map/places/${selected.id}/audio`} onError={() => setError('Не удалось воспроизвести песню. Проверьте соединение или замените аудиофайл.')} /></div> : <p>К этому месту пока не добавлена песня.</p>}
       {editor && <div className="map-form-actions"><button className="map-secondary" disabled={busy} onClick={() => startDraft(selected)}><Pencil size={16} /> Изменить</button><button className="map-icon map-danger" disabled={busy} onClick={() => setConfirmDelete(true)} aria-label="Удалить место"><Trash2 size={18} /></button></div>}
