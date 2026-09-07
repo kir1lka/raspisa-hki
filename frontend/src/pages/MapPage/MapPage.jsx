@@ -20,6 +20,8 @@ const clampPoint = ({ lat, lng }) => ({
 const imageUrl = place => `/api/map/places/${place.id}/image?v=${place.imageId}`
 const EMPTY = { title: '', description: '', latitude: CENTER[1], longitude: CENTER[0], icon: 'pin' }
 const PLACE_ICONS = [
+  // Lucide Baby paths, combined for the shared DOM/SVG marker renderer.
+  { id: 'kindergarten', label: 'Детский сад', path: 'M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5M15 12h.01M19.38 6.813A9 9 0 0 1 20.8 10.2a2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1M9 12h.01' },
   { id: 'pin', label: 'Место', path: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0' },
   { id: 'school', label: 'Школа', path: 'M3 22V10l9-7 9 7v12H3ZM9 22v-6h6v6M7 11v2m10-2v2M12 3V1m-2 8h4' },
   { id: 'hospital', label: 'Больница', path: 'M5 22V3h14v19H5ZM9 7h6m-3-3v6M9 22v-6h6v6M2 22h20' },
@@ -29,7 +31,7 @@ const PLACE_ICONS = [
   { id: 'cafe', label: 'Кафе', path: 'M4 8h13v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8ZM17 8h2a3 3 0 0 1 0 6h-2M7 2v3m4-3v3m4-3v3' },
   { id: 'music', label: 'Музыка', path: 'M9 18V5l12-3v13M9 8l12-3M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0' },
 ]
-const placeIcon = name => PLACE_ICONS.find(icon => icon.id === name) || PLACE_ICONS[0]
+const placeIcon = name => PLACE_ICONS.find(icon => icon.id === name) || PLACE_ICONS.find(icon => icon.id === 'pin')
 
 function PlaceIcon({ name }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={placeIcon(name).path} /></svg>

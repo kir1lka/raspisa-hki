@@ -58,7 +58,7 @@ public class MapPlaceService {
 
     public MapPlace save(Long id, String title, String description, double latitude, double longitude,
                          MultipartFile file, boolean removeAudio, MultipartFile image, boolean removeImage, String icon) throws IOException {
-        if (icon != null && !Set.of("pin", "school", "hospital", "park", "church", "museum", "cafe", "music").contains(icon))
+        if (icon != null && !Set.of("pin", "school", "kindergarten", "hospital", "park", "church", "museum", "cafe", "music").contains(icon))
             throw new IllegalArgumentException("Выберите иконку из списка");
         if (title == null || title.isBlank() || title.strip().length() > 120)
             throw new IllegalArgumentException("Введите название до 120 символов");
