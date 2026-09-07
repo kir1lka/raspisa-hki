@@ -91,9 +91,10 @@ html.map-mode body::before, html.map-mode body::after { display: none; }
 /* The coordinate stays at the bottom of the dot; photos and labels do not move it. */
 .map-place-marker { position: absolute; top: 0; left: 0; width: 38px; height: 38px; overflow: visible; }
 .map-marker-label { position: absolute; top: 43px; left: 50%; transform: translateX(-50%); }
-.map-photo { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 290px; overflow: hidden; background: #f3f5ef; border-radius: 14px; }
+.map-photo { --photo-max-height: 290px; position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: var(--photo-max-height); overflow: hidden; background: #f3f5ef; border-radius: 14px; }
 .map-photo img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
-.map-photo.is-loaded img { opacity: 1; animation: map-photo-reveal 350ms ease-out; }
+.map-photo.is-loaded { width: fit-content; max-width: 100%; aspect-ratio: auto; margin-left: auto; margin-right: auto; }
+.map-photo.is-loaded img { width: auto; height: auto; max-width: 100%; max-height: var(--photo-max-height); opacity: 1; animation: map-photo-reveal 350ms ease-out; }
 .map-photo-skeleton { position: absolute; inset: 0; background: #e7ece3; overflow: hidden; }
 .map-photo-skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, #ffffff80 50%, transparent 80%); animation: map-photo-shimmer 1.4s ease-in-out infinite; }
 .map-photo-error { display: grid; place-items: center; height: 100%; padding: 20px; text-align: center; color: #7a8477; font-size: 14px; }
@@ -102,11 +103,11 @@ html.map-mode body::before, html.map-mode body::after { display: none; }
 @media (prefers-reduced-motion: reduce) { .map-photo-skeleton::after, .map-photo.is-loaded img { animation: none; } }
 .map-place-image { margin: 20px 0; }
 .map-place-image[hidden] { display: none; }
-.map-image-preview { max-height: 180px; }
+.map-image-preview { --photo-max-height: 180px; }
 @media (max-width: 640px) {
   .map-panel p { font-size: 14px; }
   .map-form input:not([type=checkbox]), .map-form textarea { font-size: 16px; }
-  .map-place-image { max-height: 210px; }
+  .map-place-image { --photo-max-height: 210px; }
 }
 @media (max-width: 380px) { .map-location div > span { max-width: 90px; } }
 
