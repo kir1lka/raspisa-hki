@@ -24,7 +24,7 @@ const PLACE_ICONS = [
   { id: 'school', label: 'Школа', path: 'M3 22V10l9-7 9 7v12H3ZM9 22v-6h6v6M7 11v2m10-2v2M12 3V1m-2 8h4' },
   { id: 'hospital', label: 'Больница', path: 'M5 22V3h14v19H5ZM9 7h6m-3-3v6M9 22v-6h6v6M2 22h20' },
   { id: 'park', label: 'Парк', path: 'M12 2 5 11h4l-5 7h16l-5-7h4L12 2ZM12 18v4' },
-  { id: 'church', label: 'Храм', path: 'M12 2v6m-3-3h6M5 22V13l7-5 7 5v9H5ZM10 22v-6h4v6M2 22h20' },
+  { id: 'church', label: 'Храм', path: 'M12 2v20M9 5h6M6 9h12M8 15l8 4' },
   { id: 'museum', label: 'Музей', path: 'm3 8 9-6 9 6H3ZM5 11v8m5-8v8m4-8v8m5-8v8M3 22h18M2 19h20' },
   { id: 'cafe', label: 'Кафе', path: 'M4 8h13v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8ZM17 8h2a3 3 0 0 1 0 6h-2M7 2v3m4-3v3m4-3v3' },
   { id: 'music', label: 'Музыка', path: 'M9 18V5l12-3v13M9 8l12-3M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0' },
@@ -253,12 +253,22 @@ export default function MapPage() {
     map.getCanvas().style.cursor = draft ? 'crosshair' : ''
     if (draft) {
       if (!draftMarker.current) {
-        draftMarker.current = new maplibregl.Marker({ color: '#ed5144', draggable: true }).setLngLat([draft.longitude, draft.latitude]).addTo(map)
+        const element = document.createElement('div')
+        element.className = 'map-place-marker is-selected'
+        const dot = document.createElement('span')
+        dot.className = 'map-marker-dot'
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        for (const [key, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })) svg.setAttribute(key, value)
+        svg.append(document.createElementNS('http://www.w3.org/2000/svg', 'path'))
+        dot.append(svg)
+        element.append(dot)
+        draftMarker.current = new maplibregl.Marker({ element, anchor: 'bottom', draggable: true }).setLngLat([draft.longitude, draft.latitude]).addTo(map)
         draftMarker.current.on('dragend', () => {
           const point = draftMarker.current.getLngLat()
           setDraft(current => current ? { ...current, ...clampPoint(point) } : current)
         })
       }
+      draftMarker.current.getElement().querySelector('path').setAttribute('d', placeIcon(draft.icon).path)
       draftMarker.current.setLngLat([draft.longitude, draft.latitude]).setDraggable(!busy)
     } else {
       draftMarker.current?.remove()
@@ -305,10 +315,10 @@ export default function MapPage() {
   return <main className="district-map" data-no-pull-to-refresh>
     <h1 className="map-sr-only">Интерактивная карта Яковлевского района</h1>
     <div ref={container} className="map-canvas" aria-label="Карта улиц Строителя" />
-    <div className="map-brand"><div className="map-location map-card"><span className="map-location-icon"><MapPin size={22} /></span><div><strong>Строитель</strong><span>Город и ближайшие окрестности</span></div></div><p className="map-credit">Сделано в Школе креативных индустрий</p></div>
+    <div className="map-brand"><button type="button" className="map-location map-card" onClick={() => { if (!editor) setLoginOpen(true) }} aria-label={editor ? 'Строитель, редактор активен' : 'Строитель: вход в редактор карты'} aria-haspopup={!editor ? 'dialog' : undefined}><span className="map-location-icon"><MapPin size={22} /></span><div><strong>Строитель</strong><span>Город и ближайшие окрестности</span></div></button><p className="map-credit">Сделано в Школе креативных индустрий</p></div>
     <div className="map-toolbar">
       {editor ? <><button className="map-primary map-add" disabled={!ready || !!draft || busy} onClick={() => startDraft()}><Plus size={19} /> Добавить место</button><button className="map-icon map-card" disabled={!!draft || busy} onClick={logout} aria-label="Выйти из редактора"><LogOut size={19} /></button></>
-        : <button className="map-secondary map-card" onClick={() => setLoginOpen(true)}><Pencil size={17} /> Редактор карты</button>}
+        : null}
     </div>
     {(!ready || mapError || loadError) && <div className="map-status map-card" role="status">{mapError || loadError || 'Загружаем карту…'}{(mapError || loadError) && <button onClick={() => window.location.reload()}>Повторить</button>}</div>}
     <button className="map-home map-icon map-card" disabled={!ready} onClick={() => mapRef.current?.flyTo(VIEW)} aria-label="Вернуться к Строителю" title="Вернуться к Строителю"><LocateFixed size={21} /></button>

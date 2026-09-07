@@ -89,7 +89,7 @@ html.map-mode body::before, html.map-mode body::after { display: none; }
 @media (prefers-reduced-motion: reduce) { .district-map *, .map-login * { transition: none !important; } }
 
 /* The coordinate stays at the bottom of the dot; photos and labels do not move it. */
-.map-place-marker { position: relative; width: 38px; height: 38px; overflow: visible; }
+.map-place-marker { position: absolute; top: 0; left: 0; width: 38px; height: 38px; overflow: visible; }
 .map-marker-label { position: absolute; top: 43px; left: 50%; transform: translateX(-50%); }
 .map-place-image, .map-image-preview { display: block; width: 100%; max-height: 290px; object-fit: contain; background: #f3f5ef; border-radius: 14px; }
 .map-place-image { margin: 20px 0; }
@@ -104,7 +104,7 @@ html.map-mode body::before, html.map-mode body::after { display: none; }
 
 .map-marker-dot svg { width: 21px; height: 21px; }
 .map-brand { position: absolute; top: 24px; left: 24px; width: max-content; max-width: calc(100vw - 48px); pointer-events: none; }
-.map-brand .map-location { position: static; }
+.map-brand .map-location { position: static; pointer-events: auto; text-align: left; color: inherit; }
 .map-credit { max-width: 285px; margin: 9px 4px 0; color: #7f857d; font-size: 12px; line-height: 1.5; text-shadow: 0 1px 3px #fff, 0 0 8px #fff; }
 .map-icon-picker > span { display: block; margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #53604e; }
 .map-icon-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
