@@ -324,7 +324,10 @@ export default function MapPage() {
   }
 
   return <main className="district-map" data-no-pull-to-refresh>
-    <h1 className="map-sr-only">Интерактивная карта Яковлевского района</h1>
+    <div className="map-project-title">
+      <h1>Услышано в Строителе</h1>
+      <p>медиапроект звуковой карты</p>
+    </div>
     <div ref={container} className="map-canvas" aria-label="Карта улиц Строителя" />
     <div className="map-brand"><button type="button" className="map-location map-card" onClick={() => { if (!editor) setLoginOpen(true) }} aria-label={editor ? 'Строитель, редактор активен' : 'Строитель: вход в редактор карты'} aria-haspopup={!editor ? 'dialog' : undefined}><span className="map-location-icon"><MapPin size={22} /></span><div><strong>Строитель</strong><span>Город и ближайшие окрестности</span></div></button><p className="map-credit">Сделано в Школе креативных индустрий</p></div>
     <div className="map-toolbar">
