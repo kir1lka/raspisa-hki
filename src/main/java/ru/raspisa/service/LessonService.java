@@ -148,6 +148,11 @@ public class LessonService {
 
     private void applyRequest(Lesson lesson, LessonRequest req) {
 
+        boolean customTime = req.customTime() != null ? req.customTime() : lesson.isCustomTime();
+        if (customTime && (req.time() == null || req.endTime() == null || !req.endTime().isAfter(req.time()))) {
+            throw new IllegalArgumentException("Окончание занятия должно быть позже начала");
+        }
+
         Group group = null;
         if (req.groupNumber() != null) {
             group = groupRepository.findByNumber(GroupNames.normalize(req.groupNumber()));
@@ -165,6 +170,7 @@ public class LessonService {
         lesson.setSpecial(req.special() != null && req.special());
         lesson.setDate(req.date());
         lesson.setEndTime(req.endTime());
+        lesson.setCustomTime(customTime);
         lesson.setTitle(req.title());
         lesson.setDescription(req.description());
         lesson.setPhotos(req.photos() != null ? new ArrayList<>(req.photos()) : new ArrayList<>());
@@ -189,7 +195,8 @@ public class LessonService {
                 l.getEndTime(),
                 l.getTitle(),
                 l.getDescription(),
-                l.getPhotos() != null ? List.copyOf(l.getPhotos()) : List.of()
+                l.getPhotos() != null ? List.copyOf(l.getPhotos()) : List.of(),
+                l.isCustomTime()
         );
     }
 }

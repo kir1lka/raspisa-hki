@@ -35,7 +35,7 @@ class LessonControllerTest {
 
     private LessonDto sample(long id, String group, String code, String studio, String teacher) {
         return new LessonDto(id, DayOfWeek.MONDAY, LocalTime.of(9, 0), 1, group, code, studio, teacher,
-                false, null, null, null, null, List.of());
+                false, null, null, null, null, List.of(), false);
     }
 
     @Test

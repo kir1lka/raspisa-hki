@@ -19,6 +19,7 @@ public record LessonDto(
         LocalTime endTime,
         String title,
         String description,
-        List<String> photos
+        List<String> photos,
+        boolean customTime
 ) {
 }

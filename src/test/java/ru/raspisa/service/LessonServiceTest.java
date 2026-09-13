@@ -62,7 +62,7 @@ class LessonServiceTest {
 
     private LessonRequest request(String groupNumber, String studioCode) {
         return new LessonRequest(DayOfWeek.MONDAY, LocalTime.of(9, 0), 1, groupNumber, studioCode,
-                false, null, null, null, null, null);
+                false, null, null, null, null, null, null);
     }
 
     @Test
@@ -76,6 +76,42 @@ class LessonServiceTest {
         assertThat(dto.studioName()).isEqualTo("Фото");
         assertThat(dto.studioCode()).isEqualTo("ФВ");
         assertThat(dto.groupNumber()).isEqualTo("ВР-1");
+    }
+
+    @Test
+    void customTimeIsSavedAndReturnedByGroupAndTeacher() {
+        Group group = new Group();
+        group.setNumber("2");
+        when(groupRepository.findByNumber("2")).thenReturn(group);
+        when(studioRepository.findByCode("VR")).thenReturn(new Studio());
+        when(lessonRepository.save(any())).thenAnswer(invocation -> {
+            Lesson lesson = invocation.getArgument(0);
+            lesson.setId(20L);
+            return lesson;
+        });
+        var request = new LessonRequest(DayOfWeek.MONDAY, LocalTime.of(13, 15), 1, "2", "VR",
+                false, null, LocalTime.of(14, 35), null, null, null, true);
+        LessonDto saved = service.create(request);
+        assertThat(saved.customTime()).isTrue();
+        assertThat(saved.time()).isEqualTo(LocalTime.of(13, 15));
+        assertThat(saved.endTime()).isEqualTo(LocalTime.of(14, 35));
+        Lesson stored = lesson(20L, DayOfWeek.MONDAY, saved.time(), "2", "VR", "Studio", "Teacher");
+        stored.setEndTime(saved.endTime());
+        stored.setCustomTime(true);
+        when(lessonRepository.findByGroup(group)).thenReturn(List.of(stored));
+        when(lessonRepository.findByStudio_Teacher_Id(1L)).thenReturn(List.of(stored));
+        assertThat(service.findByGroup("2").get(0).endTime()).isEqualTo(saved.endTime());
+        assertThat(service.findByTeacher(1L).get(0).customTime()).isTrue();
+    }
+
+    @Test
+    void customTimeRejectsMissingOrReversedEnd() {
+        for (LocalTime end : new LocalTime[]{null, LocalTime.of(13, 15), LocalTime.of(12, 0)}) {
+            var request = new LessonRequest(DayOfWeek.MONDAY, LocalTime.of(13, 15), 1, "2", "VR",
+                    false, null, end, null, null, null, true);
+            assertThatThrownBy(() -> service.create(request)).isInstanceOf(IllegalArgumentException.class);
+        }
+        verify(lessonRepository, never()).save(any());
     }
 
     @Test

@@ -36,6 +36,12 @@ const sessionToShift = (session) => (session === 'morning' ? 'MORNING' : 'AFTERN
 
 const hhmm = (t) => (t ? String(t).slice(0, 5) : '')
 
+function lessonMinutes(lesson, fallback) {
+  if (!lesson.customTime || !lesson.endTime) return fallback
+  const minutes = t => { const [h, m] = hhmm(t).split(':').map(Number); return h * 60 + m }
+  return Math.max(0, minutes(lesson.endTime) - minutes(lesson.time))
+}
+
 function addMinutes(t, mins) {
   const [h, m] = hhmm(t).split(':').map(Number)
   const total = h * 60 + m + mins
@@ -153,10 +159,11 @@ export default function SchoolSchedule() {
     const cellText = (day, order) => {
       const list = cellList(day, order)
       if (!list.length) return ''
-      const start = hhmm(list[0].time)
       const session = order <= layout.morningRows ? 'morning' : 'afternoon'
-      const lines = list.map((l) => `${l.groupNumber} ${l.studioCode}`)
-      return [`${start}–${addMinutes(start, sessionLesson(session))}`, ...lines].join('\n')
+      const regular = list.find(l => !l.customTime)
+      const start = regular ? hhmm(regular.time) : null
+      const lines = list.map((l) => `${l.groupNumber} ${l.studioCode}${l.customTime ? ` (${hhmm(l.time)}–${hhmm(l.endTime)})` : ''}`)
+      return [...(start ? [`${start}–${addMinutes(start, sessionLesson(session))}`] : []), ...lines].join('\n')
     }
 
     const period = (order) => {
@@ -204,7 +211,7 @@ export default function SchoolSchedule() {
     const byStudio = {}
     reg.forEach((l) => {
       const s = shiftOf(l.orderNumber)
-      const dur = sessionLesson(s)
+      const dur = lessonMinutes(l, sessionLesson(s))
       totalMin += dur
       const g = byGroup[l.groupNumber] || (byGroup[l.groupNumber] = { count: 0, shifts: new Set() })
       g.count++
@@ -388,6 +395,9 @@ export default function SchoolSchedule() {
     const allowed = allowedGroupNumbers(session)
     setForm({
       id: null,
+      customTime: false,
+      defaultTime: time,
+      defaultEndTime: addMinutes(time, sessionLesson(session)),
       dayOfWeek: dayKey,
       time,
       endTime: addMinutes(time, sessionLesson(session)),
@@ -401,11 +411,18 @@ export default function SchoolSchedule() {
   function openEdit(l) {
     const session = (l.orderNumber ?? 1) <= layout.morningRows ? 'morning' : 'afternoon'
     const time = hhmm(l.time)
+    const order = l.orderNumber ?? 1
+    const regular = cellLessons(l.dayOfWeek, order).find(item => !item.customTime)
+    const slotTime = regular ? hhmm(regular.time) : timeOverrides[`${l.dayOfWeek}-${order}`]
+      ?? defaultTime(l.dayOfWeek, session, order - (session === 'morning' ? 1 : layout.firstAfternoon))
     setForm({
       id: l.id,
+      customTime: !!l.customTime,
+      defaultTime: slotTime,
+      defaultEndTime: addMinutes(slotTime, sessionLesson(session)),
       dayOfWeek: l.dayOfWeek,
       time,
-      endTime: addMinutes(time, sessionLesson(session)),
+      endTime: l.endTime ? hhmm(l.endTime) : addMinutes(time, sessionLesson(session)),
       orderNumber: l.orderNumber ?? 1,
       groupNumber: l.groupNumber,
       studioCode: l.studioCode,
@@ -422,8 +439,8 @@ export default function SchoolSchedule() {
       await updateLesson(lesson.id, lessonPayload(lesson, {
         dayOfWeek: targetDay,
         orderNumber: targetOrder,
-        time: `${targetTime}:00`,
-        endTime: `${targetEndTime}:00`,
+        time: lesson.customTime ? lesson.time : `${targetTime}:00`,
+        endTime: lesson.customTime ? lesson.endTime : `${targetEndTime}:00`,
       }))
       toast?.success('Занятие перенесено')
       reload()
@@ -533,7 +550,7 @@ export default function SchoolSchedule() {
     const overrides = {}
     for (let p = order; p <= lastOrder; p++) {
       const start = addMinutes(newTime, (p - order) * step)
-      const cell = lessons.filter((l) => l.dayOfWeek === day && l.orderNumber === p)
+      const cell = lessons.filter((l) => !l.customTime && l.dayOfWeek === day && l.orderNumber === p)
       if (cell.length) {
         const end = addMinutes(start, sessionLesson(session))
         cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, {
@@ -564,13 +581,13 @@ export default function SchoolSchedule() {
     const updates = []
     const overrides = {}
     for (const { key: day } of DAYS) {
-      const anchorLessons = lessons.filter((l) => l.dayOfWeek === day && l.orderNumber === firstOrder)
+      const anchorLessons = lessons.filter((l) => !l.customTime && l.dayOfWeek === day && l.orderNumber === firstOrder)
       const anchor = anchorLessons.length
         ? hhmm(anchorLessons[0].time)
         : timeOverrides[`${day}-${firstOrder}`] ?? defaultTime(day, session, 0)
       for (let p = firstOrder; p <= lastOrder; p++) {
         const start = addMinutes(anchor, (p - firstOrder) * step)
-        const cell = lessons.filter((l) => l.dayOfWeek === day && l.orderNumber === p)
+        const cell = lessons.filter((l) => !l.customTime && l.dayOfWeek === day && l.orderNumber === p)
         if (cell.length) {
           const end = addMinutes(start, sessionLesson(session))
           cell.forEach((l) => updates.push(updateLesson(l.id, lessonPayload(l, {
@@ -649,8 +666,9 @@ export default function SchoolSchedule() {
 
   function Cell({ dayKey, session, index, order }) {
     const items = cellLessons(dayKey, order)
-    const time = items.length
-      ? hhmm(items[0].time)
+    const regularItem = items.find(l => !l.customTime)
+    const time = regularItem
+      ? hhmm(regularItem.time)
       : timeOverrides[`${dayKey}-${order}`] ?? defaultTime(dayKey, session, index)
     const editing = timeEdit && timeEdit.day === dayKey && timeEdit.order === order
 
@@ -711,6 +729,7 @@ export default function SchoolSchedule() {
                 {l.special && <Sparkles className="size-5 shrink-0 text-brand" />}
               </span>
               {l.special && l.date && <span className="truncate text-base font-medium text-brand">{fmtDateShort(l.date)}</span>}
+              {l.customTime && <span className="whitespace-nowrap text-sm font-medium text-brand">{hhmm(l.time)}–{hhmm(l.endTime)}</span>}
             </span>
             <button type="button" onClick={() => openEdit(l)} className="text-muted transition-colors hover:text-brand" title="Изменить">
               <Pencil className="size-6" />
@@ -1114,7 +1133,7 @@ function StudioSummaryTable({ lessons, isAfternoonLesson, morningLessonMin, afte
         minutes: 0,
       }
       current.count += 1
-      current.minutes += Number(isAfternoonLesson(lesson) ? afternoonLessonMin : morningLessonMin) || 40
+      current.minutes += lessonMinutes(lesson, Number(isAfternoonLesson(lesson) ? afternoonLessonMin : morningLessonMin) || 40)
       studios.set(code, current)
     })
 
@@ -1225,6 +1244,7 @@ function lessonPayload(l, override = {}) {
     special: !!l.special,
     date: l.date ?? null,
     endTime: l.endTime ?? null,
+    customTime: !!l.customTime,
     title: l.title ?? null,
     description: l.description ?? null,
     ...override,
@@ -1243,6 +1263,10 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
   async function save(e) {
     e.preventDefault()
     setErr(null)
+    if (form.customTime && (!form.time || !form.endTime || form.endTime <= form.time)) {
+      setErr('Окончание занятия должно быть позже начала')
+      return
+    }
     setSaving(true)
     const payload = {
       dayOfWeek: form.dayOfWeek,
@@ -1251,6 +1275,7 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
       groupNumber: normalizeGroupNumber(form.groupNumber),
       studioCode: form.studioCode,
       special: false,
+      customTime: !!form.customTime,
       endTime: form.endTime.length === 5 ? `${form.endTime}:00` : form.endTime,
     }
     try {
@@ -1270,7 +1295,7 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
 
   return createPortal(
     <div className="fixed inset-0 z-50 grid animate-fade-in place-items-center bg-black/50 p-4">
-      <form onSubmit={save} className="w-full max-w-lg animate-fade-up rounded-card border-2 border-line bg-surface p-6 shadow-xl">
+      <form onSubmit={save} className="max-h-[90dvh] w-full max-w-lg overflow-y-auto animate-fade-up rounded-card border-2 border-line bg-surface p-6 shadow-xl">
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-xl font-bold text-ink">
             {isEdit ? 'Изменить занятие' : `Добавить занятие (занятие №${form.orderNumber})`}
@@ -1301,6 +1326,21 @@ function LessonModal({ form, setForm, days, groupNumbers, studioCodes, onClose, 
             </select>
           </label>
         </div>
+
+        <label className="mt-4 flex items-center gap-3 text-sm font-medium text-ink">
+          <input type="checkbox" className="size-5 accent-brand" checked={!!form.customTime} onChange={e => set(e.target.checked
+            ? { customTime: true }
+            : { customTime: false, time: form.defaultTime, endTime: form.defaultEndTime })} />
+          Своё время занятия
+        </label>
+        {form.customTime && <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="block min-w-0 text-sm font-medium text-ink">Начало
+            <input type="time" required className={field} value={form.time} onChange={e => set({ time: e.target.value })} />
+          </label>
+          <label className="block min-w-0 text-sm font-medium text-ink">Окончание
+            <input type="time" required className={field} value={form.endTime} onChange={e => set({ endTime: e.target.value })} />
+          </label>
+        </div>}
 
         {err && (
           <p className="mt-4 rounded-card border-2 border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">{err}</p>

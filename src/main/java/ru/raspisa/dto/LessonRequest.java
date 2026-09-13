@@ -32,6 +32,7 @@ public record LessonRequest(
         java.time.LocalTime endTime,
         String title,
         String description,
-        java.util.List<String> photos
+        java.util.List<String> photos,
+        Boolean customTime
 ) {
 }

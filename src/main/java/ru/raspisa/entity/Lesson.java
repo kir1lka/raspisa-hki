@@ -28,6 +28,12 @@ public class Lesson {
 
     private LocalTime endTime;
 
+    @Column(columnDefinition = "boolean default false")
+    private boolean customTime;
+
+    public boolean isCustomTime() { return customTime; }
+    public void setCustomTime(boolean customTime) { this.customTime = customTime; }
+
     private String title;
 
     @Lob
