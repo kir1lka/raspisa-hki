@@ -52,7 +52,7 @@ export default defineConfig({
         importScripts: ['/push-sw.js'],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/map/'),
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/map/') && !url.pathname.startsWith('/api/attendance'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',

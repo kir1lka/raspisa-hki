@@ -16,9 +16,11 @@ import java.util.List;
 public class GroupService {
 
     private final GroupRepository repo;
+    private final ru.raspisa.repository.AttendanceStudentRepository attendanceStudents;
 
-    public GroupService(GroupRepository repo) {
+    public GroupService(GroupRepository repo, ru.raspisa.repository.AttendanceStudentRepository attendanceStudents) {
         this.repo = repo;
+        this.attendanceStudents = attendanceStudents;
     }
 
     @Transactional(readOnly = true)
@@ -57,6 +59,9 @@ public class GroupService {
     @Transactional
     public void delete(Long id) {
         Group g = repo.findById(id).orElseThrow();
+        if (attendanceStudents.existsByGroupId(id)) {
+            throw new IllegalArgumentException("Нельзя удалить группу с журналом посещаемости: в нём хранятся ученики и их история.");
+        }
         if (g.getLessons() != null && !g.getLessons().isEmpty()) {
             throw new IllegalArgumentException(
                     "Нельзя удалить группу с занятиями (" + g.getLessons().size() + " шт.). Сначала уберите её занятия.");

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { CalendarDays, Building2, PartyPopper, ChevronDown } from 'lucide-react'
+import { CalendarDays, Building2, PartyPopper, ChevronDown, ClipboardCheck } from 'lucide-react'
+import AttendanceJournal from '../../components/AttendanceJournal/AttendanceJournal'
 import AppHeader from '../../components/AppHeader/AppHeader'
 import SearchBar from '../../components/SearchBar/SearchBar'
 import SettingsModal from '../../components/SettingsModal/SettingsModal'
@@ -78,6 +79,9 @@ export default function DashboardPage() {
       </div>
 
       <main className="mx-auto w-full max-w-[1140px] flex-1 px-3 pb-12 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+        <CollapsibleSection icon={ClipboardCheck} title="Посещаемость" collapsed={collapsed.attendance} onToggle={() => toggleSection('attendance')}>
+          <AttendanceJournal />
+        </CollapsibleSection>
         <CollapsibleSection
           wide
           icon={CalendarDays}

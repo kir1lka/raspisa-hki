@@ -21,6 +21,7 @@ export function setUser(user, remember = true) {
 }
 
 export function clearUser() {
+  fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
   localStorage.removeItem(KEY)
   sessionStorage.removeItem(KEY)
 }

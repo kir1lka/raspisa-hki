@@ -20,7 +20,17 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public UserDto login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request.login(), request.password());
+    public UserDto login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletRequest http) {
+        UserDto user = authService.login(request.login(), request.password());
+        var session = http.getSession();
+        http.changeSessionId();
+        session.setAttribute("schoolStaff", "ADMIN".equals(user.role()) || "TEACHER".equals(user.role()));
+        return user;
+    }
+
+    @PostMapping("/logout")
+    public void logout(jakarta.servlet.http.HttpServletRequest request) {
+        var session = request.getSession(false);
+        if (session != null) session.invalidate();
     }
 }
