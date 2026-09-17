@@ -90,8 +90,8 @@ public class AttendanceService {
         students.delete(student);
     }
     public void mark(long studentId, long lessonId, LocalDate date, String value) {
-        if (date == null || value == null || !Set.of("", "Н", "П", "1", "2", "3", "4", "5").contains(value))
-            throw new IllegalArgumentException("Выберите Н, П или оценку от 1 до 5");
+        if (date == null || value == null || !Set.of("", "Н", "П", "У", "Б", "2", "3", "4", "5").contains(value))
+            throw new IllegalArgumentException("Выберите Н, П, У, Б или оценку от 2 до 5");
         AttendanceStudent student = students.findById(studentId).orElseThrow();
         AttendanceMark record = marks.findByStudentIdAndLessonIdAndLessonDate(studentId, lessonId, date).orElse(null);
         if (record == null && value.isEmpty()) return;

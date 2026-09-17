@@ -57,6 +57,7 @@ class AttendanceServiceTest {
         Lesson lesson = lesson();
         var student = service.addStudents(lesson.getGroup().getId(), List.of("Ученица")).get(0);
         assertThrows(IllegalArgumentException.class, () -> service.mark(student.id, lesson.getId(), LocalDate.of(2026, 9, 8), "П"));
+        assertThrows(IllegalArgumentException.class, () -> service.mark(student.id, lesson.getId(), LocalDate.of(2026, 9, 7), "1"));
         assertThrows(IllegalArgumentException.class, () -> service.mark(student.id, lesson.getId(), LocalDate.of(2026, 9, 7), "6"));
         Group other = new Group(); other.setNumber("other-test"); groups.save(other);
         var foreign = service.addStudents(other.getId(), List.of("Другая группа")).get(0);

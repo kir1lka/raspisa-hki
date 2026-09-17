@@ -78,7 +78,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-[1140px] flex-1 px-3 pb-12 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
+      <main className="mx-auto w-full max-w-[1140px] flex-1 overflow-x-hidden px-3 pb-12 md:px-6 [zoom:calc(var(--ui-base)*var(--ui-zoom))]">
         <CollapsibleSection icon={ClipboardCheck} title="Посещаемость" collapsed={collapsed.attendance} onToggle={() => toggleSection('attendance')}>
           <AttendanceJournal />
         </CollapsibleSection>
@@ -130,12 +130,12 @@ export default function DashboardPage() {
 // Для остальных это вредно: сетка студий от w-max растягивалась во всю длину.
 function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, wide = false, children }) {
   return (
-    <section className="mt-10 md:mt-14">
+    <section className="mt-8 md:mt-14">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
-        className="mb-3 flex w-full items-center gap-2 text-left text-3xl font-bold text-ink transition-colors hover:text-brand md:text-4xl"
+        className="mb-3 flex w-full items-center gap-2 text-left text-2xl font-bold text-ink transition-colors hover:text-brand sm:text-3xl md:text-4xl"
       >
         <Icon className="size-8 shrink-0 text-brand" />
         <span className="flex-1">{title}</span>
@@ -150,7 +150,7 @@ function CollapsibleSection({ icon: Icon, title, collapsed, onToggle, wide = fal
             ? 'hidden'
             // ml-[50%] + сдвиг на половину своей ширины:  не центрирует
             // блок, который шире родителя, и таблица уезжала вправо
-            : (wide ? 'ml-[50%] w-max min-w-full -translate-x-1/2 ' : 'w-full ') +
+            : (wide ? 'w-full overflow-x-auto ' : 'w-full ') +
               'rounded-card border-[calc(2px/(var(--ui-base)*var(--ui-zoom)))] border-line bg-surface p-3 md:p-4'
         }
       >
