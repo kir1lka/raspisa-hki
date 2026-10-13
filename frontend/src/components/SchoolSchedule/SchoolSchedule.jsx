@@ -827,7 +827,7 @@ export default function SchoolSchedule() {
   return (
     <div className="space-y-6 pt-4 md:pt-6">
 
-      <div className="w-full space-y-6 md:relative md:left-1/2 md:w-[1340px] md:max-w-[94vw] md:-translate-x-1/2">
+      <div className="w-full min-w-0 space-y-6">
         <div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-2xl font-bold md:text-3xl">Первая смена (утро)</p>

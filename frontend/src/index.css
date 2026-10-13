@@ -267,9 +267,14 @@
   opacity: 1;
   transition-delay: 0s;
 }
-/* Плавающие шары на фоне светлой темы. Сам элемент прозрачный —
-   видно только его размытую тень, которая ходит по кругу вокруг
-   смещённого центра вращения. */
+/* Large viewport height stays stable when mobile browser bars hide on scroll. */
+.live-background {
+  height: 100vh;
+  height: 100lvh;
+}
+
+/* Each glow fades to transparency across its whole disk. Unlike an outer
+   box-shadow, this has no empty center that cuts a hole in overlapping glows. */
 @keyframes ball-move {
   to {
     transform: translate3d(0, 0, 1px) rotate(360deg);
@@ -277,9 +282,12 @@
 }
 .ball {
   position: absolute;
-  width: 32vmin;
-  height: 32vmin;
+  width: 64vmin;
+  height: 64vmin;
+  width: 64lvmin;
+  height: 64lvmin;
   border-radius: 50%;
+  background: radial-gradient(closest-side, currentColor 0%, transparent 100%);
   backface-visibility: hidden;
   animation-name: ball-move;
   animation-timing-function: linear;

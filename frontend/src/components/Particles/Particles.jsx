@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useIsDark } from '../../useIsDark'
 import { useBgEffects } from '../../useBgEffects'
 
 const SPEED = 0.06 // пикселей за кадр — намеренно очень медленно
@@ -19,7 +18,6 @@ const linkDistFor = (w) => (w < 640 ? 90 : 130)
  */
 export default function Particles() {
   const canvasRef = useRef(null)
-  const dark = useIsDark()
   const enabled = useBgEffects()
 
   useEffect(() => {
@@ -31,26 +29,39 @@ export default function Particles() {
     let raf = 0
     let w = 0
     let h = 0
-    let dots = []
+    let pixelRatio = 0
+    const dots = []
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      w = canvas.clientWidth
-      h = canvas.clientHeight
+      const nextWidth = canvas.clientWidth
+      const nextHeight = canvas.clientHeight
+      if (!nextWidth || !nextHeight) return
+      if (nextWidth === w && nextHeight === h && dpr === pixelRatio) return
+      // Keep the scene when browser chrome changes height. On an actual
+      // width change (rotation / desktop resize), preserve relative positions.
+      if (w && nextWidth !== w) {
+        dots.forEach(dot => { dot.x *= nextWidth / w; dot.y *= nextHeight / h })
+      }
+      w = nextWidth
+      h = nextHeight
+      pixelRatio = dpr
       canvas.width = w * dpr
       canvas.height = h * dpr
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const count = countFor(w)
+      if (dots.length > count) dots.length = count
+      while (dots.length < count) dots.push(createDot())
+      paint()
     }
 
-    const seed = () => {
-      dots = Array.from({ length: countFor(w) }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * SPEED * 2,
-        vy: (Math.random() - 0.5) * SPEED * 2,
-        r: 1 + Math.random() * 1.4,
-      }))
-    }
+    const createDot = () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * SPEED * 2,
+      vy: (Math.random() - 0.5) * SPEED * 2,
+      r: 1 + Math.random() * 1.4,
+    })
 
     const accent = () =>
       getComputedStyle(document.documentElement).getPropertyValue('--color-brand').trim() || '#3b82f6'
@@ -64,17 +75,21 @@ export default function Particles() {
       if (now - last < 33) return
       last = now
 
-      const color = accent()
-      const linkDist = linkDistFor(w)
-      ctx.clearRect(0, 0, w, h)
-
       for (const d of dots) {
         d.x += d.vx
         d.y += d.vy
         // мягкий разворот у краёв вместо телепорта
-        if (d.x < 0 || d.x > w) d.vx *= -1
-        if (d.y < 0 || d.y > h) d.vy *= -1
+        if ((d.x < 0 && d.vx < 0) || (d.x > w && d.vx > 0)) d.vx *= -1
+        if ((d.y < 0 && d.vy < 0) || (d.y > h && d.vy > 0)) d.vy *= -1
       }
+      paint()
+    }
+
+    const paint = () => {
+      const color = accent()
+      const dark = document.documentElement.classList.contains('dark')
+      const linkDist = linkDistFor(w)
+      ctx.clearRect(0, 0, w, h)
 
       ctx.strokeStyle = color
       for (let i = 0; i < dots.length; i++) {
@@ -109,14 +124,10 @@ export default function Particles() {
     }
     const stop = () => cancelAnimationFrame(raf)
     const onVisibility = () => (document.hidden ? stop() : start())
-    const onResize = () => {
-      resize()
-      seed()
-    }
+    const onResize = resize
 
     resize()
-    seed()
-    start()
+    if (!document.hidden) start()
     // ResizeObserver, а не только событие окна: на скрытой вкладке размер
     // канваса на момент запуска может быть нулевым, и без наблюдателя
     // он таким и останется, пока окно не поменяет размер.
@@ -131,7 +142,7 @@ export default function Particles() {
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [dark, enabled])
+  }, [enabled])
 
   if (!enabled) return null
 
@@ -139,7 +150,7 @@ export default function Particles() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 size-full"
+      className="live-background pointer-events-none fixed left-0 top-0 -z-10 w-full"
     />
   )
 }
